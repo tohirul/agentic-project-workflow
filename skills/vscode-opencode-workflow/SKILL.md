@@ -1,135 +1,96 @@
 ---
 name: orchestrating-vscode-opencode-workflows
-description: Orchestrates deterministic, project-scoped development workflows between VS Code and OpenCode. Use when the user requests editor-aware automation, context-bound coding, session restoration, or multi-step workflows tied to a project root.
+description: Deterministic, script-driven orchestration layer binding VS Code and OpenCode into a strictly project-scoped workflow. Enforces validation, lifecycle sequencing, and editor-first execution with zero inference.
 ---
 
-# VS Code + OpenCode Workflow Orchestrator
+# VS Code + OpenCode Workflow Orchestrator (Authoritative)
 
-This skill defines a **deterministic, editor-first execution model** where:
+This skill defines the **only valid orchestration layer** for coordinating
+VS Code, OpenCode, scripts, and plugins inside a single project workspace.
 
-- **VS Code** is the single system of record
-- **OpenCode** is a scoped execution and reasoning assistant
-- **Plugins** provide isolated expertise without autonomy
-- **Scripts** perform all environment detection and validation
+This orchestrator:
 
-The orchestrator **coordinates** these components.  
-It does not improvise, infer, or compensate for missing state.
+- **Does not reason**
+- **Does not infer**
+- **Does not recover**
+- **Does not decide**
+
+It **coordinates deterministic execution only**, as defined by contract.
+
+---
+
+## Fixed System Roles
+
+- **VS Code** — system of record  
+- **OpenCode** — scoped execution surface  
+- **Scripts (`scripts/`)** — filesystem, detection, validation authority  
+- **Plugins** — isolated expertise, no autonomy
 
 ---
 
 ## Core Guarantees
 
-This skill explicitly enforces the following guarantees:
+- No cross-project context leakage  
+- No inference or fallback behavior  
+- No silent plugin activation  
+- No autonomous editor control  
+- No non-reproducible execution  
 
-- No global or cross-project context leakage
-- No implicit assumptions about language, stack, or tooling
-- No silent plugin activation
-- No autonomous editor manipulation
-- No non-reproducible execution paths
-- No inference-based recovery behavior
-
-If a requirement is unmet, the system **halts**.
+Failure → **halt immediately**
 
 ---
 
-## When to Use This Skill
+## Governing Contract
 
-Trigger this skill **only** when at least one of the following is true:
-
-- The user explicitly references **VS Code**
-- The user explicitly references **OpenCode**
-- The task requires **project-aware or context-sensitive** execution
-- The task involves bootstrapping, restoring, or synchronizing sessions
-- The task spans multiple steps that must share a stable project context
-
-Do **not** use this skill for:
-
-- Isolated code snippets
-- Purely conversational reasoning
-- Tasks not bound to a project root
+- `CONTRACT.md` is authoritative  
+- Conflicts → `CONTRACT.md` wins  
+- No reinterpretation or recovery allowed
 
 ---
 
-## Execution Model
+## Canonical Execution Checklist
 
-All execution MUST follow the sequence below.  
-Steps may **not** be skipped, reordered, or merged.
-
----
-
-## Canonical Checklist
-
-The agent MUST track progress using this checklist:
-
-- [ ] Resolve absolute project root directory
-- [ ] Detect primary language or stack
-- [ ] Verify OpenCode CLI availability
-- [ ] Validate project context (`ai.project.json`, if present)
-- [ ] Resolve plugin compatibility
-- [ ] Construct deterministic session identity
-- [ ] Attach OpenCode to the VS Code workspace
-- [ ] Enforce explicit task scope boundaries
-
-Checklist state must be updated as execution proceeds.
+- Resolve project root  
+- Detect stack  
+- Verify OpenCode CLI  
+- Validate ai.project.json  
+- Resolve plugins  
+- Bind session  
+- Attach to VS Code  
+- Enforce scope  
 
 ---
 
-## Plan → Validate → Execute
+## Execution Phases
 
-### 1. Plan
+### Phase 1 — Detection
+`scripts/detect-project.zsh`
 
-The agent must determine the following **without inference**:
+### Phase 2 — Context Creation
+`scripts/generate-context.zsh`
 
-- Absolute project root path
-- Primary language or stack (single value)
-- Presence of version control
-- Presence of a project context file (`ai.project.json`)
+### Phase 3 — Validation
+`scripts/validate-context.zsh`
 
-No execution is permitted until all values are known explicitly.
-
----
-
-### 2. Validate
-
-The agent must validate all prerequisites using scripts and contracts:
-
-- `opencode` CLI exists and is executable
-- Project root contains at least one recognized marker
-- `ai.project.json` (if present) passes validation
-- Required plugins for the task exist
-- Session identity is deterministic and non-colliding
-
-If any validation fails:
-
-- **Halt immediately**
-- Report the failure clearly
-- Do not attempt fallback, guessing, or recovery
+### Phase 4 — Execution
+OpenCode attaches to VS Code
 
 ---
 
-### 3. Execute
+## Script Authority
 
-Execution is strictly limited to:
-
-- Launching or attaching OpenCode sessions
-- Loading explicitly required plugins
-- Synchronizing validated context with the active VS Code workspace
-
-All execution must be:
-
-- Idempotent
-- Project-scoped
-- Explicitly authorized
+Scripts are authoritative.  
+No inference. No auto-fix. No guessing.
 
 ---
 
-## Script Contracts
+## Memory Rules
 
-The orchestrator relies on the following scripts.  
-They MUST be executed exactly as defined.
+This workflow layer NEVER reads or writes memory.
 
-### Project Detection
+---
 
-```bash
-scripts/detect-project.zsh
-```
+## Final Rule
+
+If interpretation is required → **STOP**  
+Determinism > convenience

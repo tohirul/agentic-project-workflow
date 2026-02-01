@@ -1,24 +1,79 @@
-# Workflow Contract
+---
+## Script Authority
 
-This workflow is shell-agnostic.
+All scripts under `scripts/` are authoritative for:
+  - Filesystem inspection
+  - Context generation
+  - Context validation
+  - Task skeleton emission
+  - Example discovery
 
-## Invariants
+Scripts MUST:
+  - Operate on explicit inputs only
+  - Produce deterministic output
+  - Exit non-zero on failure
+  - Never mutate files unless explicitly defined
 
-- No scripts assume a working directory
-- No scripts read shell aliases or functions
-- No scripts modify user environment variables
-- All execution is deterministic and idempotent
+Scripts MUST NOT:
+  - Select models
+  - Infer intent
+  - Read chat history
+  - Modify memory
+  - Write editor state
+---
 
-## Integration Points
+## Editor Binding Rules
 
-External tools MAY:
+This workflow assumes:
 
-- Call scripts via absolute paths
-- Export OPENCODE_WORKFLOW_ROOT
-- Export OPENCODE_WORKFLOW_SCRIPTS
+- VS Code workspace is the **only editor context**
+- OpenCode attaches to VS Code, not vice versa
 
-External tools MUST NOT:
+The workflow MUST NOT:
 
-- Re-implement orchestration logic
-- Infer plugins
-- Modify ai.project.json implicitly
+- Launch editors autonomously
+- Switch workspaces
+- Modify VS Code settings
+- Persist editor UI state
+
+---
+
+## Failure Semantics
+
+All failures are **hard failures**.
+
+On failure:
+
+- Emit a single, clear error message
+- Exit immediately
+- Do not retry
+- Do not attempt recovery
+- Do not fallback
+
+Silence or partial execution is forbidden.
+
+---
+
+## Compatibility Guarantees
+
+This workflow guarantees compatibility with:
+
+- Any POSIX-compliant shell
+- Any OpenCode-supported model
+- Any OpenCode plugin
+
+Compatibility is achieved by:
+
+- Zero reliance on shell globals
+- Zero reliance on model behavior
+- Zero reliance on editor heuristics
+
+---
+
+## Final Contract Rule
+
+If any component cannot operate **exactly** within this contract:
+
+→ Execution MUST halt  
+→ Responsibility MUST be surfaced  
+→ No compensating behavior is allowed
