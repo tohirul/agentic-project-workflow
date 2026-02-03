@@ -74,6 +74,79 @@ Lifecycle violations are treated as **policy violations** and result in immediat
 
 ---
 
+## Authority Tier Definitions
+
+Each model belongs to **exactly one authority tier**.
+Intent does **not** override tier.
+
+### Tier-A — Primary Authority
+
+- Gemini 2.5 Pro (gemini-2.5-pro)
+- Devstral2 (mistral-devstral2)
+- GPT-5.1 Codex (gpt-5.1-codex)
+- GPT-5.2 Codex (gpt-5.2-codex)
+
+Capabilities:
+
+- Architectural decisions
+- Refactors (with gates)
+- Code generation (with gates)
+- Memory writes (SAVE)
+
+Notes:
+
+- GPT-5.1 Codex is review-focused; GPT-5.2 Codex is authorized for architecture.
+
+### Tier-B — Secondary Authority
+
+- Gemini 2 (gemini-2)
+- Gemini 1.5 Pro (gemini-1.5-pro)
+- Gemini 2 Flash (gemini-2-flash)
+- Gemini 2.5 Flash (gemini-2.5-flash)
+- Mistral Medium (mistral-medium)
+- Mistral Small (mistral-small)
+- GPT-4o (gpt-4o) [legacy / compatibility]
+
+Capabilities:
+
+- Debugging
+- Planning
+- Verified summaries
+- Assisted decisions (no unilateral SAVE)
+
+### Tier-C — Preview / Restricted
+
+- Gemini 3 Pro Preview (gemini-3-pro-preview)
+- Gemini 3 Flash Preview (gemini-3-flash-preview)
+
+Capabilities:
+
+- Read-only reasoning
+- Option comparison
+- Advisory output only
+
+**No mutation. No SAVE. No refactor.**
+
+### Tier-D — Free / Assistive (Non-Authoritative)
+
+- KIMI K2.5 Free (kimi-k2.5-free)
+- Minimax M2.1 Free (minimax-m2.1-free)
+- Big Pickle (big-pickle)
+- Qwen-2.x (qwen-2.x)
+- DeepSeek-Coder (deepseek-coder-community)
+- GLM-4.7 Free (glm-4.7-free)
+
+Capabilities:
+
+- Pre-work
+- Drafting
+- Extraction
+- Idea surfacing
+
+All Tier-D output is **non-final** and **must be verified**.
+
+---
+
 ## Execution Lifecycle (Strict, Ordered)
 
 Every execution MUST follow **all phases below**.
@@ -108,99 +181,7 @@ Intent is **immutable** for the entire execution.
 
 ---
 
-## Phase 2 — Authority Tier Resolution
-
-Each model belongs to **exactly one authority tier**.
-Intent does **not** override tier.
-
-### Tier-A — Primary Authority
-
-- Gemini 2.5 Pro (gemini-2.5-pro)
-- Devstral2 (mistral-devstral2)
-- GPT-5.1 Codex (gpt-5.1-codex)
-- GPT-5.2 Codex (gpt-5.2-codex)
-
-Capabilities:
-
-- Architectural decisions
-- Refactors (with gates)
-- Code generation (with gates)
-- Memory writes (SAVE)
-
-Notes:
-
-- GPT-5.1 Codex is review-focused; GPT-5.2 Codex is authorized for architecture.
-
----
-
-### Tier-B — Secondary Authority
-
-- Gemini 2 (gemini-2)
-- Gemini 1.5 Pro (gemini-1.5-pro)
-- Gemini 2 Flash (gemini-2-flash)
-- Gemini 2.5 Flash (gemini-2.5-flash)
-- Mistral Medium (mistral-medium)
-- Mistral Small (mistral-small)
-- GPT-4o (gpt-4o) [legacy / compatibility]
-
-Capabilities:
-
-- Debugging
-- Planning
-- Verified summaries
-- Assisted decisions (no unilateral SAVE)
-
----
-
-### Tier-C — Preview / Restricted
-
-- Gemini 3 Pro Preview (gemini-3-pro-preview)
-- Gemini 3 Flash Preview (gemini-3-flash-preview)
-
-Capabilities:
-
-- Read-only reasoning
-- Option comparison
-- Advisory output only
-
-**No mutation. No SAVE. No refactor.**
-
----
-
-### Tier-D — Free / Assistive (Non-Authoritative)
-
-- KIMI K2.5 Free (kimi-k2.5-free)
-- Minimax M2.1 Free (minimax-m2.1-free)
-- Big Pickle (big-pickle)
-- Qwen-2.x (qwen-2.x)
-- DeepSeek-Coder (deepseek-coder-community)
-- GLM-4.7 Free (glm-4.7-free)
-
-Capabilities:
-
-- Pre-work
-- Drafting
-- Extraction
-- Idea surfacing
-
-All Tier-D output is **non-final** and **must be verified**.
-
----
-
-## Phase 3 — Model Selection (Deterministic)
-
-Model routing MUST:
-
-- Follow `selection.md` exactly
-- Respect authority tier restrictions
-- Respect preview and free-tier limits
-- Never fallback implicitly
-
-If no valid model exists for intent + tier → **HALT**
-
----
-
-## Phase 4 — Context Assembly (Mandatory)
+## Phase 2 — Context Assembly (Mandatory)
 
 Before execution, the orchestrator MUST assemble a **frozen context snapshot**
 per `context-contract.md`.
@@ -223,7 +204,14 @@ Execution MUST halt if:
 
 ---
 
-## Phase 5 — Delegation Contract
+## Phase 3 — Model Selection (Deterministic)
+
+Model routing MUST:
+
+- Follow `selection.md` exactly
+- Respect authority tier restrictions
+
+## Phase 4 — Delegation Contract
 
 The orchestrator MUST delegate with an explicit contract:
 
@@ -244,7 +232,7 @@ The execution model MAY NOT:
 
 ---
 
-## Phase 6 — Verification & Enforcement (Mandatory)
+## Phase 5 — Verification & Enforcement (Mandatory)
 
 No output may be returned, saved, or acted upon without passing
 `verification.md`.
@@ -269,7 +257,7 @@ retry → reroute → halt
 
 ---
 
-## Phase 7 — Burnout & Cost Governance
+## Phase 6 — Burnout & Cost Governance
 
 The orchestrator enforces:
 
@@ -339,8 +327,9 @@ This workflow is **allowed only with explicit task boundaries** at each handoff.
    - Task ends after verification.
 
 1a. **If Codestral fails (Task A fails)**
-   - Start a NEW Task A with **Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex)** co-planning.
-   - This is a new task boundary and remains compliant with no same-task chaining.
+
+- Start a NEW Task A with **Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex)** co-planning.
+- This is a new task boundary and remains compliant with no same-task chaining.
 
 2. **Task B — Implementation (Tier-A)**
    - Devstral2 (mistral-devstral2) analyzes the approved plan and implements the solution.
@@ -357,7 +346,7 @@ This workflow is **allowed only with explicit task boundaries** at each handoff.
 
 ---
 
-## Phase 8 — Memory Synchronization (SAVE / RESTORE)
+## Phase 7 — Memory Synchronization (SAVE / RESTORE)
 
 Memory mutation is **exceptional**, not default.
 

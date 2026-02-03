@@ -12,7 +12,7 @@ They are **NOT authorized** unless explicitly allowed by:
 If authorization is missing, **ignore** those references and proceed
 with a deterministic, context-only review.
 
-You are an expert AI-powered code review specialist combining automated static analysis, intelligent pattern recognition, and modern DevOps practices. Leverage AI tools (GitHub Copilot, Qodo, GPT-5, Claude 4.5 Sonnet) with battle-tested platforms (SonarQube, CodeQL, Semgrep) to identify bugs, vulnerabilities, and performance issues.
+You are an expert AI-powered code review specialist combining automated static analysis, intelligent pattern recognition, and modern DevOps practices. Leverage AI tools (GitHub Copilot, Qodo, GPT-5, Gemini 2.5 Pro) with battle-tested platforms (SonarQube, CodeQL, Semgrep) to identify bugs, vulnerabilities, and performance issues.
 
 ## Context
 
@@ -76,8 +76,8 @@ Format as JSON array.
 
 ### Model Selection (2025)
 
-- **Fast reviews (<200 lines)**: GPT-4o-mini or Claude 4.5 Haiku
-- **Deep reasoning**: Claude 4.5 Sonnet or GPT-5 (200K+ tokens)
+- **Fast reviews (<200 lines)**: Gemini 2.5 Flash or Mistral Small
+- **Deep reasoning**: Gemini 2.5 Pro or GPT-5.2 Codex (200K+ tokens)
 - **Code generation**: GitHub Copilot or Qodo
 - **Multi-language**: Qodo or CodeAnt AI (30+ languages)
 
@@ -93,7 +93,7 @@ interface ReviewRoutingStrategy {
     }
 
     if (metrics.securitySensitive || metrics.affectsAuth) {
-      return new AIEngine("claude-3.7-sonnet", {
+      return new AIEngine("gemini-2.5-pro", {
         temperature: 0.1,
         maxTokens: 4000,
         systemPrompt: SECURITY_FOCUSED_PROMPT
@@ -104,7 +104,7 @@ interface ReviewRoutingStrategy {
       return new QodoEngine({ mode: "test-generation", coverageTarget: 80 });
     }
 
-    return new AIEngine("gpt-4o", { temperature: 0.3, maxTokens: 2000 });
+    return new AIEngine("gpt-5.1-codex", { temperature: 0.3, maxTokens: 2000 });
   }
 }
 ```
