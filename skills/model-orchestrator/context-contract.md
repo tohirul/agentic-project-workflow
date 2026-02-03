@@ -1,291 +1,188 @@
-# Context Contract (Authoritative, Non-Negotiable)
+# Context Contract (Authoritative)
 
-This document defines the **hard security and consistency contract**
-for how context is assembled, shared, interpreted, and protected.
+This file defines the **authoritative rules for context assembly, validation,
+and usage** for the Multi-Model AI Orchestrator.
 
-This contract applies to:
+Context is **frozen**, **deterministic**, and **hierarchical**.
+Models do not reason about context — they **obey it**.
 
-- All models
-- All agents
-- All plugins
-- All scripts
-- All lifecycle phases
-
-No component may bypass, weaken, or reinterpret this contract.
-
-Violation = **hard failure**.
+No model, agent, plugin, or user instruction may bypass,
+reinterpret, or expand context rules defined here.
 
 ---
 
-## Core Context Invariants
+## Context Philosophy
 
-The following invariants are absolute:
+- Context is authoritative; output is subordinate
+- Context is assembled **before** execution
+- Context is immutable during execution
+- Missing context is never inferred
 
-- Context is **immutable per task**
-- Context is **identical for all models**
-- Context is **explicit only**
-- Context is **never inferred**
-- Context is **never partially loaded**
-
-If any invariant cannot be satisfied → **HALT**.
+Correctness > convenience  
+Determinism > creativity  
 
 ---
 
-## Context Snapshot Model
+## What Is Context
 
-For every task execution, the orchestrator MUST construct
-a single **Context Snapshot**.
+Context is the **complete, frozen information set**
+provided to a model for a single task.
 
-This snapshot is:
+Context MAY include:
+- RESTORE memory (if required)
+- `ai.project.json`
+- Explicit task scope
+- Explicit user prompt
+- Active plugin contracts (if any)
 
-- Frozen at task start
-- Read-only
-- Version-stable
-- Passed verbatim to all models
-
-There is:
-
-- NO per-model context
-- NO per-agent context
-- NO adaptive context
-- NO hidden memory
-
----
-
-## Context Assembly Order (Strict Priority)
-
-Context MUST be assembled in the exact order below.
-Higher priority sources override lower ones.
-
-1. **RESTORE Memory**
-   - Approved ADRs
-   - Persisted constraints
-   - Accepted decisions
-
-2. **`ai.project.json`**
-   - Project authority
-   - Tooling limits
-   - Architectural constraints
-
-3. **Task Scope**
-   - Normalized intent
-   - Allowed actions
-   - Read/write boundaries
-   - Declared files or paths
-
-4. **User Prompt**
-   - Interpreted strictly
-   - Never authoritative
-
-Failure to load any required source → **HALT**.
+Context MUST NOT include:
+- Prior chat history (unless explicitly restored)
+- Cross-project information
+- Model-inferred assumptions
+- Undeclared defaults
 
 ---
 
-## Authority Rules (Hard)
+## Context Assembly Order (Strict)
 
-### RESTORE Memory
+Context MUST be assembled in the following order.
+Higher-priority context overrides lower-priority context.
 
-- Represents **validated historical truth**
-- Overrides:
-  - User redefinitions
-  - Model reinterpretations
-  - New speculative direction
+1. RESTORE memory (approved, versioned only)
+2. Active architectural constraints
+3. Domain & schema definitions
+4. `ai.project.json`
+5. Task scope & permissions
+6. Explicit user prompt
 
-RESTORE memory:
-
-- MUST be fully loaded
-- MUST NOT be selectively ignored
-- MUST NOT be shadowed
+Any deviation → **HALT**
 
 ---
 
-### ai.project.json
+## Context Immutability Rule
 
-`ai.project.json` is the **primary execution authority**.
+Once context is assembled and execution begins:
 
-It defines:
+- No additions
+- No removals
+- No reinterpretation
+- No dynamic loading
 
-- Allowed languages
-- Allowed tools
-- Forbidden patterns
-- Architectural constraints
-- Module system
-- Application style
-
-Any output violating `ai.project.json` → **hard failure**.
+Any attempt to mutate context mid-execution → **HALT**
 
 ---
 
-### Task Scope
+## `ai.project.json` Requirement
 
-Task scope:
+For **project-bound intents**, `ai.project.json` is **mandatory**.
 
-- MUST be explicit
-- MUST be immutable
-- MUST include:
-  - intent
-  - permissions
-  - boundaries
+Project-bound intents include:
+- `architecture`
+- `domain`
+- `code_generation`
+- `code_review`
+- `refactor`
+- `debugging`
+- `planning`
 
-Task scope MAY NOT:
-
-- Expand implicitly
-- Be reinterpreted by models
-- Be overridden by user phrasing
-
-Scope expansion requires **explicit user approval**.
+If `ai.project.json` is missing → **HALT**
 
 ---
 
-### User Prompt
+## Bootstrap Exception — `generate_context`
 
-User prompt has **lowest authority**.
+The intent `generate_context` is a **single, explicit exception**
+to the `ai.project.json` requirement.
 
-It MAY:
+### Rules
 
-- Ask questions
-- Request clarification
-- Operate within scope
+- `ai.project.json` MAY be absent
+- Sandbox remains **ENABLED**
+- Write permission is granted **ONLY** for `ai.project.json`
+- Output MUST be exactly one file: `ai.project.json`
+- No SAVE / RESTORE
+- No additional context mutation
 
-It MAY NOT:
-
-- Override constraints
-- Select models
-- Modify memory
-- Bypass sandbox
-- Redefine architecture
+Any violation → **HALT**
 
 ---
 
-## Model Permissions
+## Context Validation Rules
 
-Models MAY:
+Before execution, the orchestrator MUST validate that:
 
-- Read context snapshot
-- Quote context verbatim
-- Validate outputs against context
-- Report conflicts or missing data
+- Context is complete for the intent
+- Context contains no conflicts
+- Context does not contradict RESTORE memory
+- Context does not violate architectural constraints
+- Context is scoped to exactly ONE project
 
-Models MAY NOT:
+### Failure Classification
 
-- Modify context
-- Invent missing fields
-- Assume defaults
-- Infer intent
-- Fill gaps creatively
-- Normalize ambiguity
-- Rewrite history
-
----
-
-## Missing Context Handling (Mandatory)
-
-If any required context element is missing:
-
-The model MUST:
-
-1. STOP execution
-2. Explicitly name the missing context
-3. Ask the user OR fail safely
-
-The model MUST NOT:
-
-- Guess
-- Assume industry defaults
-- Import patterns from training data
-- Proceed conditionally
-
-Ambiguity ≠ permission.
+| Condition | Result |
+|--------|--------|
+| Missing required context | `ASK_USER` |
+| Conflicting context | `HALT` |
+| Cross-project context | `HALT` |
 
 ---
 
-## Conflict Resolution Rules (Deterministic)
+## Cross-Project Isolation (Absolute)
 
-| Conflict                        | Resolution              |
-| ------------------------------- | ----------------------- |
-| User prompt vs ai.project.json  | ai.project.json         |
-| User prompt vs RESTORE          | RESTORE                 |
-| Task scope vs user prompt       | Task scope              |
-| SAVE vs existing RESTORE        | RESTORE                 |
-| Model suggestion vs constraints | Constraints             |
-| Model disagreement              | Highest-authority model |
-| Unresolvable conflict           | HALT + ask user         |
+Context MUST be isolated per project.
 
-No silent resolution is allowed.
+Forbidden:
+- Referencing other repositories
+- Reusing schemas from other projects
+- Assuming shared infrastructure
+- Using historical memory from unrelated work
+
+Violation → **HALT**
 
 ---
 
-## Context Mutation Rules
+## Plugin Context Rules
 
-Context mutation is **forbidden by default**.
+Plugins MAY contribute context ONLY if:
 
-The ONLY valid mutation paths are:
+- Plugin is explicitly enabled
+- Plugin contract is loaded
+- Plugin scope is declared
+- Plugin context does not override core context
 
-- SAVE (post-verification, milestone-based)
-- ADR workflow (architecture intent only)
+Plugins MUST NOT:
+- Mutate core context
+- Inject hidden instructions
+- Load external memory
 
-Forbidden mutation paths include:
-
-- Model output
-- Plugin side effects
-- Script execution
-- Suggested changes
-- “Recommended updates”
-
-Silent mutation = **critical violation**.
+Violation → **HALT**
 
 ---
 
-## Tier-Specific Context Restrictions
+## Missing Context Handling
 
-### Tier-D / Free / Community Models
+If required context is missing and cannot be inferred:
 
-- Context is strictly read-only
-- Output MUST be marked non-authoritative
-- Output MUST be verified by Tier-A or Tier-B
-- Cannot introduce new concepts or constraints
+The ONLY allowed response is:
 
----
+> **"Insufficient context."**
 
-### Preview Models
-
-Preview models MAY:
-
-- Reason
-- Compare
-- Propose options
-
-Preview models MAY NOT:
-
-- Write files
-- Generate tasks
-- Trigger SAVE / RESTORE
-- Declare decisions
-- Mutate context
-
-Violation → **hard failure, no retry**.
+No assumptions.
+No extrapolation.
+No partial execution.
 
 ---
 
-## Enforcement Guarantees
+## Final Rule
 
-The following principles always apply:
+If there is **any uncertainty** about:
 
-- Context integrity > output quality
-- Explicit state > inferred state
-- Determinism > creativity
-- Verification > convenience
-- Safety > speed
+- Whether context is sufficient
+- Whether context applies
+- Whether context conflicts exist
 
----
+→ **ASK USER**
+→ **DO NOT GUESS**
+→ **DO NOT PROCEED**
 
-## Final Enforcement Rule
-
-If a model, agent, or plugin cannot operate
-**entirely within this contract**:
-
-→ It MUST refuse execution  
-→ It MUST explain the blocking issue  
-→ It MUST NOT proceed
-
-There are **no exceptions**.
+Correct non-execution is compliant behavior.

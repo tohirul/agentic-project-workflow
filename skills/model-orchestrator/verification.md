@@ -1,55 +1,52 @@
-### Phase 0 — Lifecycle State Validation (Mandatory)
-
-Confirm that:
-
-- Output corresponds to the current lifecycle phase
-- Model used is permitted in this phase
-- Actions performed are allowed in this phase
-
-Failure conditions:
-
-- Model acts outside its lifecycle phase
-- Write occurs in read-only phase
-- SAVE attempted outside Phase 10
-
-❌ Failure → Reject output (no retry)
-
 # Unified Verification & Response Validation (Authoritative)
 
-This file defines the **final, non-bypassable enforcement gate**
-for **all AI-generated outputs**.
+This file defines the **final, non-bypassable verification gate**
+for **all AI-generated outputs** under the Multi-Model AI Orchestrator.
 
 No output may be:
-
 - Returned to the user
 - Persisted via SAVE
-- Used by another agent
+- Used by another agent or plugin
 - Used to trigger execution
 
-unless it passes **every phase** in this document.
+unless it passes **every rule in this document**.
 
-Validation is **mandatory**, **deterministic**, and **fail-closed**.
+Verification is **deterministic**, **fail-closed**, and **policy-driven**.
 
 ---
 
-## Scope of Enforcement
+## Verification Philosophy
 
-This validator applies to:
+- Verification is stricter than generation
+- Policy always outranks output quality
+- Silence is preferable to unsafe output
+- Recoverable errors require human intervention, not autonomy
 
-- All models (Tier-A → Tier-D)
-- All intents
-- All plugins
-- All agents
-- All lifecycle phases
+Correctness > completeness  
+Governance > convenience  
+Safety > speed  
 
-There are **no exceptions**.
+---
+
+## Terminal Outcomes (Aligned with CHECKS.md)
+
+Verification MAY end in exactly one outcome:
+
+| Outcome | Meaning |
+|-------|--------|
+| `PASS` | Output is valid and may proceed |
+| `HALT` | Non-recoverable violation |
+| `ASK_USER` | Missing or ambiguous information |
+| `INTERVENTION_REQUIRED` | Recoverable structural failure |
+
+No other outcomes are permitted.
 
 ---
 
 ## Validation Order (STRICT, NON-SKIPPABLE)
 
-Validation MUST be executed in the following order.
-Failure at any step immediately aborts evaluation.
+Validation MUST be executed in the exact order below.
+Failure at any step immediately stops evaluation.
 
 1. Intent Alignment
 2. Model Authority Validation
@@ -65,18 +62,17 @@ Failure at any step immediately aborts evaluation.
 
 Confirm that the output:
 
-- Matches the **single normalized intent**
+- Matches the **single locked intent**
 - Does NOT introduce secondary or implicit intents
 - Does NOT drift across lifecycle phases
 
-### Immediate FAIL if output includes:
-
+### Immediate HALT if output includes:
 - Mixed intents (e.g. review + refactor)
-- Unrequested planning or architectural opinion
-- Decision-making during research
-- Refactor guidance without refactor intent
+- Unrequested planning or architectural decisions
+- Execution guidance during research
+- Refactor or code changes without proper intent
 
-❌ Failure → **Reject output**
+Failure → `HALT`
 
 ---
 
@@ -88,15 +84,13 @@ Confirm that the output is valid for:
 - Model tier & role (per `configuration.md`)
 - Declared intent (per `intent-classifier.md`)
 
-### Immediate HARD FAIL if:
-
+### Immediate HALT if:
 - Preview model performs write, refactor, or SAVE actions
-- Flash or Tier-D model produces authoritative output
-- Research model makes decisions
+- Tier-D or Flash model produces authoritative output
 - Any model escalates its own authority
-- Any model violates role boundaries
+- Role boundaries are violated
 
-❌ Failure → **Reject output (NO retry)**
+Failure → `HALT` (NO retry)
 
 ---
 
@@ -106,23 +100,23 @@ The output MAY reference ONLY entities present in:
 
 1. RESTORE memory
 2. `ai.project.json`
-3. Detected project stack
-4. Active plugin contracts
-5. Explicit user prompt
+3. Declared task scope
+4. Explicit user prompt
+5. Active plugin contracts (if any)
 
 ### Forbidden (Zero Tolerance):
 
 - Invented tools, frameworks, APIs, services
 - Assumed defaults or “industry standard” claims
 - Cross-project or prior-project knowledge
-- Rewriting architecture history
-- Creative gap-filling
+- Rewriting accepted architecture or history
 
-If required context is missing, the ONLY allowed response is:
+### Failure Classification:
 
-> **"Insufficient context."**
-
-❌ Any violation → **Reject output**
+| Condition | Result |
+|--------|--------|
+| Missing required context | `ASK_USER` |
+| Invented or conflicting context | `HALT` |
 
 ---
 
@@ -136,139 +130,115 @@ The output MUST NOT:
 - Introduce ADRs outside ADR workflow
 - Mutate routing, memory, or context indirectly
 
-Silent mutation = **critical violation**
+Silent mutation is a **critical violation**.
 
-❌ Failure → **Reject output**
+Failure → `HALT`
 
 ---
 
 ## 5️⃣ Structural Integrity Validation
 
-### For Code Outputs
+### For ALL Outputs
 
-The output MUST:
+- Output matches the required format (Markdown / JSON / Diff / ADR)
+- Required sections are present
+- No placeholders or pseudo-content
+- No “assume this exists” patterns
 
-- Be syntactically valid for the target language
-- Use only real, existing APIs
-- Compile logically (no pseudo-code unless requested)
-- Avoid placeholders such as:
-  - `TODO`
-  - `assume this exists`
-  - `someService`
-  - `your implementation here`
+### Additional Rules
 
-### For Code Review Outputs
+**Code Outputs**
+- Syntactically valid
+- Uses only real, existing APIs
+- No TODOs or stubs unless explicitly allowed
 
-- Must reference exact files and line numbers
-- Must remain diff-scoped
-- Must not suggest refactors unless intent = refactor
+**Code Review Outputs**
+- Diff-scoped only
+- Exact file paths and line numbers required
+- No refactor suggestions unless intent = refactor
 
-### For Architecture / Domain Outputs
-
-- Must be ADR-compatible when required
-- Must separate:
-  - Facts
+**Architecture / Domain Outputs**
+- ADR-compatible structure when required
+- Clear separation of:
+  - Context
   - Constraints
   - Decisions
   - Trade-offs
-- Must avoid implementation details when forbidden
+- No implementation detail when forbidden
 
-❌ Failure → **Reject output**
+### Failure Classification:
+
+| Failure | Result |
+|------|--------|
+| Malformed format | `INTERVENTION_REQUIRED` |
+| Missing required sections | `INTERVENTION_REQUIRED` |
 
 ---
 
-## 6️⃣ Hallucination Detection (Zero Tolerance)
+## 6️⃣ Hallucination Detection (Intent-Scoped)
 
-Immediate, non-recoverable FAIL if output contains:
+Hallucination enforcement depends on **intent criticality**.
 
-- “You could use X” where X is not in context
-- “Typically / usually / commonly” without grounding
-- Undeclared abstractions or patterns
-- Non-existent APIs or libraries
-- Speculative future tooling
-- Security or architectural hallucinations
+### Critical Intents
+`architecture`, `domain`, `refactor`, `code_generation`
 
-### Retry Rules
+Immediate **HALT** if output contains:
+- Invented APIs, tools, or frameworks
+- Ungrounded assumptions
+- Speculative language (“maybe”, “likely”, “typically”) without citation
+- Assumed defaults or future tooling
 
-| Hallucination Type               | Action                 |
-| -------------------------------- | ---------------------- |
-| Architecture / Security          | Reject, NO retry       |
-| Refactor-related                 | Reject, NO retry       |
-| Minor descriptive (non-critical) | Retry once, same model |
+### Non-Critical Intents
+`research`, `summarize`, `chat`, `planning`
 
-❌ Failure → **Reject output**
+- Ungrounded generalizations → allowed but flagged
+- Any decision, mutation, or recommendation beyond scope → `HALT`
+
+No retry is permitted for hallucination in critical intents.
 
 ---
 
 ## 7️⃣ Output Contract Validation
 
-The output MUST strictly match the declared contract:
+The output MUST strictly match the declared output contract:
 
-- Correct format (Markdown / JSON / Diff / ADR)
+- Correct format
 - Allowed sections ONLY
 - Correct verbosity
 - No reasoning traces
 - No orchestration or policy references
-- No speculative language (“maybe”, “likely”, “I think”)
+- No speculative or advisory language where forbidden
 
-❌ Failure → **Reject output**
+### Failure Classification:
+
+| Failure | Result |
+|------|--------|
+| Contract mismatch | `INTERVENTION_REQUIRED` |
+| Forbidden content | `HALT` |
 
 ---
 
-## Retry Policy (GLOBAL, STRICT)
+## Retry Policy (Global, Strict)
 
 - Maximum retries per task: **1**
 - Retry MUST:
   - Use the SAME model
   - Apply stricter constraints
-  - Reduce scope or verbosity
 - No automatic promotion
 - No silent substitution
 
-Second failure → **HALT**
+Second failure → `HALT`
 
 ---
 
-## Tier-Specific Enforcement
+## Standardized Verification Responses
 
-### Tier-D (Free / Community Models)
-
-- Output MUST be marked **non-authoritative**
-- MUST be verified by Tier-A or Tier-B
-- MUST NOT be final
-
-Missing verification → **Discard output**
-
----
-
-### Preview Models
-
-Preview models MAY:
-
-- Reason
-- Compare
-- Propose options
-
-Preview models MAY NOT:
-
-- Write files
-- Modify code
-- Trigger SAVE / RESTORE
-- Generate tasks
-- Declare decisions
-
-Violation → **Hard failure, NO retry**
-
----
-
-## Standardized Rejection Responses
-
-On validation failure, respond with EXACTLY ONE:
+On failure, respond with EXACTLY ONE of:
 
 - **"Insufficient context."**
 - **"Request exceeds allowed scope."**
 - **"Model authority violation detected."**
-- **"Response failed validation."**
+- **"Response failed verification."**
 
 No additional explanation unless explicitly requested.
 
@@ -276,24 +246,24 @@ No additional explanation unless explicitly requested.
 
 ## Enforcement Invariants (Absolute)
 
-- No output without passing validation
+- No output without passing verification
 - No model validates itself
 - No partial acceptance
 - No silent correction
-- No advisory policy
+- No advisory enforcement
 
 ---
 
 ## Final Enforcement Rule
 
-If validation cannot be completed deterministically due to:
+If verification cannot be completed deterministically due to:
 
 - Missing context
 - Ambiguous intent
 - Policy conflict
 
-→ **ASK the user explicitly**  
-→ **DO NOT GUESS**  
+→ **ASK USER**
+→ **DO NOT GUESS**
 → **DO NOT PROCEED**
 
-Correct silence is preferable to incorrect output.
+Correct silence is a valid and compliant outcome.

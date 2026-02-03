@@ -1,295 +1,268 @@
-# Orchestrated Development Lifecycle (Authoritative)
+# Execution Lifecycle (Authoritative)
 
-This file defines the **only valid lifecycle**
-for project work under the Multi-Model AI Orchestrator.
+This file defines the **strict, non-skippable execution lifecycle**
+for the Multi-Model AI Orchestrator.
 
-The lifecycle is **sequential, stateful, and enforced**.
-Phases MAY NOT be skipped, reordered, or merged.
+The lifecycle is a **finite-state machine**.
+Every task MUST progress through the phases defined here
+in the exact order specified.
+
+No phase may be skipped, merged, reordered, or repeated
+unless explicitly stated.
+
+---
+
+## Lifecycle Philosophy
+
+- Lifecycle enforces discipline over speed
+- Each phase has exclusive authority boundaries
+- Earlier phases constrain later phases
+- Failure never advances the lifecycle
+
+Correctness > convenience  
+Governance > autonomy  
+
+---
+
+## Lifecycle Overview
+
+Each task proceeds through the following phases:
+
+0. State Validation  
+1. Intent Classification  
+2. Context Assembly  
+2a. Context Bootstrap (conditional)  
+3. Model Selection  
+4. Delegation  
+5. Execution  
+6. Verification  
+7. Intervention (conditional)  
+8. Telemetry Finalization  
+9. Memory Synchronization (SAVE)  
+10. Task Termination  
+
+Not all phases are entered for every task,
+but order is always preserved.
+
+---
+
+## Phase 0 — State Validation (Mandatory)
+
+**Purpose**
+- Ensure the system is in a valid state to begin execution
+
+**Checks**
+- No unresolved previous failures
+- Sandbox state determined
+- Telemetry backend available
+
+**Failure**
+- Any failure → `HALT`
+
+---
+
+## Phase 1 — Intent Classification (Mandatory)
+
+**Purpose**
+- Resolve exactly ONE intent using `intent-classifier.md`
+
+**Rules**
+- Intent must be deterministic
+- Intent becomes immutable after resolution
+
+**Failure Handling**
+- Ambiguous or mixed intent → `ASK_USER`
+- Invalid intent → `HALT`
+
+---
+
+## Phase 2 — Context Assembly (Mandatory)
+
+**Purpose**
+- Assemble the frozen execution context per `context-contract.md`
+
+**Actions**
+- Load RESTORE memory (if required)
+- Load `ai.project.json`
+- Apply task scope and permissions
+
+**Failure Handling**
+- Missing context → `ASK_USER`
+- Conflicting context → `HALT`
+
+---
+
+## Phase 2a — Context Bootstrap (`generate_context` ONLY)
+
+**Entry Condition**
+- intent = `generate_context`
+
+**Purpose**
+- Create or regenerate `ai.project.json` safely
+
+**Rules**
+- Sandbox remains ENABLED
+- Write permission limited to `ai.project.json`
+- No SAVE / RESTORE
+- No other file writes
+
+**Exit Condition**
+- Valid `ai.project.json` produced
+
+**Failure**
+- Any violation → `HALT`
+
+---
+
+## Phase 3 — Model Selection (Mandatory)
+
+**Purpose**
+- Select an eligible model via `selection.md`
+- Resolve physical model via `configuration.md`
+
+**Rules**
+- Deterministic selection only
+- No heuristic routing
+- No silent fallback
+
+**Failure**
+- No eligible model → `HALT`
+
+---
+
+## Phase 4 — Delegation (Mandatory)
+
+**Purpose**
+- Delegate execution with an explicit contract
+
+**Delegation Contract Includes**
+- Fixed model identity
+- Fixed role
+- Locked intent
+- Frozen context snapshot
+- Explicit output contract
+
+**Rules**
+- Model may not expand scope
+- Model may not load additional context
+- Model may not mutate memory unless allowed
+
+Violation → `HALT`
+
+---
+
+## Phase 5 — Execution
+
+**Purpose**
+- Perform the task under strict constraints
+
+**Rules**
+- Prompt hardening applied
+- Sandbox rules enforced
+- Telemetry recorded per invocation
+- No lifecycle phase escape
+
+**Failure**
+- Policy violation → `HALT`
+
+---
+
+## Phase 6 — Verification (Mandatory)
+
+**Purpose**
+- Validate output per `verification.md`
+
+**Possible Outcomes**
+- PASS
+- HALT
+- ASK_USER
+- INTERVENTION_REQUIRED
+
+No output proceeds without passing this phase.
+
+---
+
+## Phase 7 — Intervention (Conditional)
+
+**Entry Condition**
+- Verification result = `INTERVENTION_REQUIRED`
+
+**Purpose**
+- Allow human correction of recoverable errors
+
+**Rules**
+- Models are inactive
+- Sandbox remains ENABLED
+- Only output edits allowed
+- No context mutation
+- No SAVE / RESTORE
+
+**Exit Conditions**
+- Verification re-run
+- PASS → proceed
+- Failure → `HALT`
+
+---
+
+## Phase 8 — Telemetry Finalization (Mandatory)
+
+**Purpose**
+- Seal telemetry for the task
+
+**Rules**
+- Telemetry is append-only
+- Burnout limits enforced
+- Escalation records finalized
+
+Failure → `HALT`
+
+---
+
+## Phase 9 — Memory Synchronization (SAVE) (Conditional)
+
+**Entry Condition**
+- Intent ∈ {architecture, domain, refactor}
+- Verification PASSED
+- SAVE explicitly permitted
+
+**Rules**
+- SAVE is a system action
+- Memory is append-only
+- Conflicts require user resolution
+
+Misuse → `HALT`
+
+---
+
+## Phase 10 — Task Termination (Mandatory)
+
+**Purpose**
+- Cleanly terminate the task
+
+**Actions**
+- Release sandbox state
+- Close telemetry scope
+- Prevent further execution
+
+No further actions permitted.
 
 ---
 
 ## Lifecycle Invariants (Absolute)
 
-- Each phase has a single authority
-- Models do not advance phases
-- Context must be valid before execution
-- Memory writes are explicit and gated
-- Verification is mandatory between phases
-
-Violation of lifecycle rules → **halt**
-
----
-
-## Phase 0 — Entry & Session Binding
-
-**Authority:** System  
-**Model:** None
-
-Purpose:
-
-- Bind session ID
-- Initialize telemetry
-- Freeze project scope
-
-Rules:
-
-- No model invocation allowed
-- No context mutation
-- Telemetry starts here
-
----
-
-## Phase 1 — Project Detection
-
-**Command:** `scripts/detect-project.zsh`  
-**Authority:** System  
-**Model:** Gemini 2 Flash (router role)
-
-Purpose:
-
-- Detect project root
-- Detect primary language / stack
-- Detect VCS presence
-- Emit deterministic metadata
-
-Rules:
-
-- Read-only
-- No assumptions
-- No fallback heuristics
-
-Failure → halt
-
----
-
-## Phase 2 — Context Creation (Human-in-the-Loop)
-
-**Command:** `scripts/generate-context.zsh`  
-**Authority:** Human + System  
-**Model:** None
-
-Purpose:
-
-- Generate `ai.project.json` template
-- Human fills required fields
-
-Rules:
-
-- AI MAY NOT infer missing fields
-- AI MAY NOT auto-complete intent
-- Incomplete file → validation failure
-
-This phase MUST complete before any reasoning model is used.
-
----
-
-## Phase 3 — Context Validation
-
-**Command:** `scripts/validate-context.zsh`  
-**Authority:** System  
-**Model:** None
-
-Purpose:
-
-- Validate schema
-- Validate constraints
-- Validate forbidden patterns
-- Validate lifecycle readiness
-
-Rules:
-
-- No model invocation
-- No auto-fixes
-- No silent defaults
-
-Failure → return to Phase 2
-
----
-
-## Phase 4 — Context Restoration (If Applicable)
-
-**Authority:** System  
-**Model:** None
-
-Triggered when:
-
-- intent = architecture
-- intent = refactor
-- intent = domain
-
-Purpose:
-
-- RESTORE prior memory
-- Rehydrate ADRs and decisions
-
-Rules:
-
-- RESTORE precedes all reasoning
-- Missing memory → ask or halt
-- No SAVE allowed here
-
----
-
-## Phase 5 — Architecture / Domain Intent
-
-**Authority:** Architect Agent  
-**Model:** Gemini 2.5 Pro  
-**Role:** architect (read-only)
-
-Purpose:
-
-- Produce architectural decisions
-- Generate ADR-compatible output
-
-Hard Gates:
-
-- Output MUST be ADR-structured
-- No code generation
-- No implementation detail
-- SAVE permitted ONLY via ADR workflow
-
-Failure → reject output
-
----
-
-## Phase 6 — Planning (Optional, Explicit)
-
-**Authority:** Assistant Agent  
-**Model:** Gemini Pro or Gemini 2
-
-Purpose:
-
-- Break approved architecture into steps
-- Define execution boundaries
-
-Rules:
-
-- No code writes
-- No refactors
-- No SAVE
-- Must reference approved ADR
-
-Skipped unless explicitly requested.
-
----
-
-## Phase 7 — Implementation / Refactor / Code Generation
-
-**Authority:** Executor Agent  
-**Model:** Devstral2  
-**Role:** executor
-
-Purpose:
-
-- Apply scoped changes
-- Implement approved plan
-
-Hard Gates:
-
-- Canary execution REQUIRED
-- Diff-scoped only
-- RESTORE already completed
-- SAVE forbidden until review passes
-
-Violation → hard halt
-
----
-
-## Phase 8 — Review & Verification
-
-**Authority:** Reviewer Agent  
-**Model:** Devstral2  
-**Role:** reviewer
-
-Purpose:
-
-- Review diffs only
-- Enforce architectural integrity
-- Enforce constraints
-
-Rules:
-
-- Read-only
-- No new changes
-- No refactor suggestions outside scope
-
-Failure → return to Phase 7
-
----
-
-## Phase 9 — Verification Gate (Mandatory)
-
-**Authority:** System  
-**Model:** None
-
-Purpose:
-
-- Run `verification.md`
-- Validate:
-  - intent alignment
-  - model authority
-  - context compliance
-  - scope integrity
-  - hallucination absence
-
-Failure → reject output or halt
-
----
-
-## Phase 10 — Memory Sync (SAVE)
-
-**Authority:** System  
-**Model:** None
-
-Triggered ONLY when:
-
-- Verification passed
-- Output approved
-- Explicit SAVE allowed
-
-Purpose:
-
-- Persist ADRs
-- Persist architectural decisions
-- Persist validated milestones
-
-Rules:
-
-- No implicit SAVE
-- No partial SAVE
-- No overwrite without versioning
-
----
-
-## Phase 11 — Exit
-
-**Authority:** System
-
-Purpose:
-
-- Close task
-- Finalize telemetry
-- Release model locks
-
----
-
-## Lifecycle Enforcement Summary
-
-| Phase | Model Allowed | Memory  | Writes     |
-| ----- | ------------- | ------- | ---------- |
-| 1–3   | Flash / None  | ❌      | ❌         |
-| 4     | None          | RESTORE | ❌         |
-| 5     | Gemini 2.5    | ❌      | ❌         |
-| 7     | Devstral2     | ❌      | ✔ (canary) |
-| 8     | Devstral2     | ❌      | ❌         |
-| 10    | None          | SAVE    | ✔          |
+- No phase skipping
+- No backward movement
+- No concurrent phases
+- No phase-specific authority leaks
+- Failure never advances lifecycle
 
 ---
 
 ## Final Rule
 
-If lifecycle state is ambiguous:
+If lifecycle progression cannot be determined unambiguously:
 
-→ **STOP**
-→ **ASK**
+→ **HALT**
 → **DO NOT PROCEED**
+
+Correct termination is compliant behavior.

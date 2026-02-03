@@ -1,360 +1,232 @@
-# Telemetry, Budgeting & Burnout Governance (Authoritative)
+# Telemetry, Burnout & Cost Governance (Authoritative)
 
-This file defines the **mandatory telemetry system** used to enforce:
+This file defines the **mandatory telemetry control plane**
+for the Multi-Model AI Orchestrator.
 
-- Cost control
-- Burnout prevention
-- Model authority governance
-- Lifecycle enforcement
-- Escalation accountability
+Telemetry is **not logging**.
+Telemetry is **enforcement infrastructure**.
 
-Telemetry is a **control plane**, not logging.
+If telemetry cannot be recorded deterministically,
+**execution MUST NOT proceed**.
 
-Telemetry is:
+---
 
-- Local
-- Deterministic
-- Append-only
-- Auditable
-- Enforcement-driving
+## Telemetry Philosophy
 
-Telemetry is **not optional**.
-If telemetry cannot be recorded, execution MUST NOT proceed.
+- Telemetry outranks convenience
+- Telemetry outranks retries
+- Telemetry outranks user impatience
+- Telemetry is immutable once written
+
+Correctness > throughput  
+Governance > speed  
+
+---
+
+## Telemetry Is Mandatory
+
+Telemetry MUST be initialized **before** any model invocation.
+
+If telemetry initialization fails:
+
+→ **HALT**
+→ **DO NOT EXECUTE**
+→ **DO NOT RETRY**
+
+There are no exceptions.
+
+---
+
+## Telemetry Persistence (Required)
+
+Telemetry MUST be persisted to durable storage.
+
+Allowed backends:
+
+- Local SQLite database (preferred)
+- Append-only JSONL file
+
+Forbidden:
+
+- In-memory telemetry
+- Volatile session-only storage
+- Overwriting existing telemetry
+
+Telemetry MUST survive:
+
+- Process restarts
+- Session restarts
+- System crashes
+
+Failure to persist → **HALT**
 
 ---
 
 ## Telemetry Scope
 
-Telemetry is captured:
+Telemetry is recorded **per invocation**, scoped by:
 
-- Per project
-- Per session
-- Per task
-- Per lifecycle phase
-- Per model invocation
+- Project
+- Session
+- Task
+- Lifecycle phase
+- Model invocation index
 
-No model execution is allowed **before telemetry capture is initialized**.
+No invocation may occur without a telemetry record.
 
 ---
 
 ## Mandatory Telemetry Fields (Strict)
 
-Each model invocation MUST record **all** of the following fields:
+Each invocation MUST record **all** fields below.
 
-| Field             | Description                                          |
-| ----------------- | ---------------------------------------------------- |
-| `timestamp`       | UTC execution time                                   |
-| `session_id`      | Deterministic session identifier                     |
-| `task_id`         | Stable task identifier                               |
-| `lifecycle_phase` | Phase number (per `lifecycle.md`)                    |
-| `model_name`      | Exact model ID                                       |
-| `model_tier`      | Tier-A / Tier-B / Tier-C / Tier-D                    |
-| `role`            | router / assistant / reviewer / architect / executor |
-| `intent`          | Normalized intent (immutable)                        |
-| `token_estimate`  | Input + output token estimate                        |
-| `call_index`      | Nth call within the task                             |
-| `result`          | success / retry / reject / halt                      |
-| `failure_reason`  | REQUIRED if result ≠ success                         |
-| `escalation_flag` | true / false                                         |
-| `escalation_note` | REQUIRED if escalation_flag = true                   |
+| Field | Description |
+|-----|-------------|
+| `timestamp` | UTC timestamp |
+| `project_id` | Project identifier |
+| `session_id` | Stable session identifier |
+| `task_id` | Stable task identifier |
+| `lifecycle_phase` | Phase per `lifecycle.md` |
+| `intent` | Locked intent |
+| `model_logical_id` | Declared logical model |
+| `model_resolved_id` | Actual resolved model |
+| `model_tier` | Tier-A / B / C / D |
+| `capability_profile` | Applied capability profile |
+| `role` | router / assistant / reviewer / architect / executor |
+| `call_index` | Nth call in task |
+| `token_estimate` | Input + output estimate |
+| `result` | success / retry / ask_user / intervention / halt |
+| `failure_reason` | Required if result ≠ success |
+| `escalation_attempted` | true / false |
+| `notes` | Optional human-readable notes |
 
-Missing **any** field → **execution blocked immediately**.
-
----
-
-## Burnout & Budget Limits (Hard Caps)
-
-Burnout limits are enforced **per task**, not per session.
-
-Limits are **non-negotiable**.
+Missing ANY field → **HALT**
 
 ---
 
-### Tier-C — Gemini 3 (Preview / Pro Preview) (gemini-3-flash-preview, gemini-3-pro-preview)
+## Capability Binding (Hard Rule)
 
-- Max **2 calls per task**
-- Max **1 escalation attempt**
-- Allowed intents:
-  - architecture
-  - research
-- Allowed role:
-  - architect (read-only)
-- ZERO tolerance for:
-  - retries after policy failure
-  - scope creep
-  - write operations
-  - SAVE / RESTORE attempts
-
-Exceeding limits → **hard halt (no retry)**
-
----
-
-### Tier-A / Tier-B — Gemini 2 / 2.5 (gemini-2, gemini-2-flash, gemini-2.5-pro, gemini-2.5-flash)
-
-- Max **6 calls per task**
-- Max **1 retry**
-- Default for:
-  - code_generation
-  - debugging
-  - planning
-- Escalation requires:
-  - telemetry justification
-  - verification failure
-
-Exceeding limits → **forced downgrade or halt**
-
----
-
-### Tier-B — Gemini Pro (Low-Risk) (gemini-1.5-pro)
-
-- Unlimited calls
-- Allowed intents ONLY:
-  - chat
-  - summarize
-- NEVER authoritative
-- NEVER escalates
-- NEVER mutates context
-
-Violation → **immediate downgrade + output discard**
-
----
-
-### Tier-A — Devstral2 (mistral-devstral2)
-
-- Max **8 calls per task**
-- Preferred for:
-  - code_review
-  - refactor
-  - debugging
-- Refactor rules:
-  - Canary execution REQUIRED
-  - Diff-scoped ONLY
-- Retry allowed ONLY on verification failure
-
-Exceeding limits → **halt refactor phase**
-
----
-
-### Tier-A — GPT-5 Codex (gpt-5.1-codex, gpt-5.2-codex)
-
-Applies to:
-
-- gpt-5.1-codex
-- gpt-5.2-codex
-
-Limits:
-
-- Max **6 calls per task**
-- Max **1 retry**
-
-Preferred for:
-
-- code_review
-- code_generation
-- research analysis
+Telemetry enforcement is driven by the
+**capability profile**, not model name.
 
 Rules:
 
-- No architectural decisions unless intent = architecture or domain
-- No refactor unless explicitly authorized for that task
-- Code generation MUST follow selection hard gates
-- No automatic model chaining
-- Cross-model handoff requires a new task boundary
+- Limits are read from `configuration.md`
+- Resolved model inherits declared capability profile
+- Fallback resolution MUST NOT upgrade capability
 
-Notes:
-
-- GPT-5.1 Codex is review-focused; GPT-5.2 Codex is authorized for architecture.
-
-See `SKILL.md` for allowed and forbidden handoff examples.
-
-Exceeding limits → **halt task**
+Capability overrun → **HALT**
 
 ---
 
-### Tier-B — Codestral (Free Tier Constraints) (codestral-latest)
+## Burnout Enforcement (Per Task)
 
-Applies to:
+Burnout limits apply **per task**, not per session.
 
-- codestral-latest
+Enforced metrics:
 
-Limits:
+- Maximum calls per task
+- Maximum retries per task
+- Maximum token budget per task
 
-- Max **4 calls per task**
-- Max **1 retry**
+If ANY limit is exceeded:
 
-Preferred for:
+→ **HALT**
+→ Task is permanently terminated
 
-- planning
-- solution outlining
-
-Rules:
-
-- Read-only guidance only
-- No architectural decisions
-- No code generation or refactor execution
-- Must follow GPT-5.2 Codex (gpt-5.2-codex) guidance when in a planning handoff
-- Cross-model handoff requires a new task boundary
-- Use for evaluation / non-production tasks only
-- If Codestral fails, start a NEW task: Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex) may co-plan (handoff only)
-
-Exceeding limits → **halt task**
+No soft resets.
+No decay.
+No forgiveness.
 
 ---
 
-### Tier-B — Legacy / Compatibility (gpt-4o)
+## Retry Accounting
 
-Applies to:
+- Retry counter increments on ANY failure
+- Retry counter does NOT reset after intervention
+- Retry MUST use the same resolved model
 
-- gpt-4o
-
-Limits:
-
-- Max **4 calls per task**
-- Max **1 retry**
-
-Rules:
-
-- Tier-B authority at most
-- No architectural decisions
-- No memory authority
-- No routing authority
-
-Exceeding limits → **halt task**
+Exceeding retry limit → **HALT**
 
 ---
 
-### Tier-D — Free / Community Models
-
-Applies to:
-
-- big-pickle
-- glm-4.7-free
-- kimi-k2.5-free
-- minimax-m2.1-free
-- qwen-2.x
-- deepseek-coder-community
-
-### Tier-B — Mistral Fallback (mistral-medium, mistral-small)
-
-Applies to:
-
-- mistral-medium
-- mistral-small
-
-- Max **3 calls per task**
-- Output is ALWAYS **non-authoritative**
-- Output MUST be verified by Tier-A or Tier-B
-- No retries allowed
-
-Any failure → **discard output immediately**
-
----
-
-## Automatic Downgrade Rules (Mandatory)
-
-Downgrade is triggered when **ANY** condition occurs:
-
-- More than 1 retry
-- Token budget exceeded
-- Over-verbosity beyond output contract
-- Verification rejection
-- Intent complexity lower than model tier
-- Lifecycle phase does not justify model authority
-
-Downgrade rules:
-
-- Downgrades MUST follow `selection.md`
-- NEVER downgrade into forbidden intent/model pairs
-- NEVER auto-promote
-
-Downgrade failure → **hard halt**
-
----
-
-## Escalation Governance (Strict)
+## Escalation Governance
 
 Escalation is **explicitly gated**.
 
-Escalation requires **ALL** of the following:
+Escalation requires ALL of:
 
-- Explicit user request OR system approval gate
-- Failure of a lower-authority model
-- Complete telemetry justification
+- Explicit user approval
+- Lower-tier failure
+- Telemetry justification recorded
 
-### Required Escalation Payload (Mandatory)
+### Required Escalation Fields
 
-Escalation telemetry MUST include:
+- Previous model
+- Failure reason
+- Expected benefit
+- Justification summary
 
-- `intent`
-- `previous_model`
-- `failure_reason`
-- `why_lower_model_failed`
-- `expected_gain`
+Missing justification → escalation denied
 
-Missing any field → **escalation denied**
+Unauthorized escalation → **HALT**
 
 ---
 
-## Telemetry-Driven Enforcement Actions
+## Telemetry-Driven Actions
 
 Telemetry MAY trigger:
 
-- Forced downgrade
-- Retry denial
-- Phase rollback
-- Task halt
-- Session termination
-- Temporary model lockout
+- Forced halt
+- Denial of retry
+- Denial of escalation
+- Phase termination
 
 Telemetry MUST NOT trigger:
 
 - Silent retries
 - Silent promotion
-- Silent substitution
+- Silent fallback
 - Context mutation
 
 ---
 
-## Telemetry Invariants (Absolute)
+## Telemetry Immutability
 
-- Telemetry is immutable once written
-- No model may read or modify its own telemetry
-- Telemetry survives session restarts
-- Telemetry cannot be bypassed
-- Telemetry outranks convenience
-- Telemetry outranks routing
-- Telemetry outranks user impatience
+- Telemetry records are append-only
+- Records MUST NOT be edited or deleted
+- Models MUST NOT read or modify telemetry
+- Humans MAY audit telemetry externally
+
+Any mutation attempt → **HALT**
 
 ---
 
-## Lifecycle Coupling (Hard Rule)
+## Lifecycle Coupling
 
-Every telemetry entry MUST include `lifecycle_phase`.
+Every telemetry record MUST include lifecycle phase.
 
 If a model acts outside its allowed phase:
 
-→ Record violation  
-→ Halt immediately  
-→ Reject output
+→ Record violation
+→ **HALT IMMEDIATELY**
 
-No retry. No downgrade.
+No retry.
+No intervention.
 
 ---
 
-## Final Enforcement Rule
+## Final Rule
 
 If telemetry data is:
 
 - Missing
 - Incomplete
 - Inconsistent
-- Conflicting with lifecycle or intent
+- Conflicting with lifecycle, intent, or configuration
 
-→ **Do not execute**
-→ **Do not retry**
-→ **Do not escalate**
-→ **Fail explicitly**
+→ **DO NOT EXECUTE**
+→ **HALT EXPLICITLY**
 
-Correctness > speed  
-Governance > convenience  
-Determinism > creativity
+Determinism > convenience  
+Governance > creativity

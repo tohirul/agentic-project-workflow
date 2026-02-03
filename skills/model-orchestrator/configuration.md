@@ -1,315 +1,229 @@
-# Multi-Model Runtime Configuration (Authoritative)
+# System Configuration (Authoritative)
 
-This file defines **runtime-enforceable execution rules**
-for the Multi-Model AI Orchestrator.
+This file defines the **static configuration layer** for the
+Multi-Model AI Orchestrator.
 
-⚠️ This file does NOT decide model routing.  
-Routing authority lives **exclusively** in `selection.md`.
+Configuration is **policy**, not preference.
+All values here are **authoritative and immutable at runtime**.
 
-This file governs:
-
-- Execution roles
-- Context injection
-- Burnout & cost control
-- Memory safety
-- Verification & failure handling
-
-No inference.  
-No silent substitution.  
-No dynamic overrides.
+If configuration conflicts with any other file,
+**this file defers to CONTRACT.md only**.
 
 ---
 
-## Model Inventory (Resolved & Supported)
+## Configuration Philosophy
 
-### Gemini Family (Google)
+- Configuration declares what is allowed, not what is convenient
+- Runtime behavior must be derivable from configuration alone
+- No heuristic interpretation is permitted
+- Explicit is always safer than implicit
 
-- gemini-1.5-pro
-- gemini-2
-- gemini-2-flash
+Correctness > flexibility  
+Governance > autonomy  
+
+---
+
+## Authority Hierarchy (Reminder)
+
+Enforcement precedence:
+
+1. CONTRACT.md
+2. This file (`configuration.md`)
+3. selection.md
+4. lifecycle.md
+5. checks / verification
+6. plugins
+7. scripts
+8. user input
+
+Lower layers may **never override** higher layers.
+
+---
+
+## Model Inventory (Logical)
+
+This section declares **logical model identities**
+used throughout the system.
+
+Logical IDs MAY be resolved to physical models via
+the resolution layer below.
+
+### Tier-A — Primary Authority
+
+- gpt-5.2-codex
+- gpt-5.1-codex
+- mistral-devstral2
 - gemini-2.5-pro
-- gemini-2.5-flash
+
+### Tier-B — Secondary Authority
+
+- gemini-2
+- gemini-1.5-pro
+- gemini-2-flash
+- mistral-medium
+- mistral-small
+- gpt-4o
+
+### Tier-C — Preview / Restricted
+
 - gemini-3-pro-preview
 - gemini-3-flash-preview
 
----
+### Tier-D — Free / Assistive
 
-### OpenAI
-
-- gpt-5.1-codex
-- gpt-5.2-codex
-
----
-
-### Mistral
-
-- mistral-devstral2
-- mistral-medium
-- mistral-small
-- codestral-latest (free-tier constrained)
-
----
-
-### Free / Assistive Models (Tier-D)
-
-Free-tier models are **assistive only**.
-
-- glm-4.7-free
 - kimi-k2.5-free
 - minimax-m2.1-free
 - big-pickle
 - qwen-2.x
 - deepseek-coder-community
+- glm-4.7-free
 
-Restrictions (NON-NEGOTIABLE):
-
-- Read-only
-- No code generation beyond snippets
-- No diff review
-- No refactor
-- No architecture
-- No SAVE / RESTORE
-- No multi-agent participation
-
-Violation → **hard failure**
+If a model is not listed here, it is **not allowed anywhere**.
 
 ---
 
-### Legacy / Compatibility Models (Restricted)
+## Model Resolution Layer (Mandatory)
 
-- gpt-4o
-- claude-sonnet (if exposed by OpenCode)
+Logical model IDs MUST be resolved to
+actual runtime models via this mapping.
 
-Rules:
-
-- Tier-B authority at most
-- NEVER architectural authority
-- NEVER memory authority
-- NEVER routing authority
-
----
-
-## Execution Roles (Strict & Exclusive)
-
-Each model invocation is bound to **exactly ONE role**.
-
-| Role        | Authority Scope                               |
-| ----------- | --------------------------------------------- |
-| `router`    | intent normalization only                     |
-| `assistant` | summarize, explain, draft (non-authoritative) |
-| `reviewer`  | diff-only inspection, read-only               |
-| `architect` | ADR-compatible reasoning only                 |
-| `executor`  | refactor / debugging under hard gates         |
-
-Rules:
-
-- Roles are assigned by orchestrator
-- Models MAY NOT change roles
-- Role mismatch → **hard failure**
-
----
-
-## Lifecycle Enforcement
-
-Model invocation is permitted ONLY if the current lifecycle phase
-explicitly allows a model for that phase (see `lifecycle.md`).
-
-If a model is selected but the lifecycle phase disallows execution:
-→ HALT
-→ Do NOT retry
-→ Do NOT downgrade
-
----
-
-## Cost & Burnout Governance
-
-### Global Invariants
-
-- One reasoning model per task
-- Maximum ONE retry per task
-- No recursive calls
-- No background retries
-- No chained Pro / Preview models
-
----
-
-### Gemini 3 (Preview Tier)
-
-Applies to:
-
-- gemini-3-pro-preview
-- gemini-3-flash-preview
-
-Limits:
-
-- Max **2 calls per task**
-- Advisory output ONLY
-- No code writes
-- No refactors
-- No migrations
-- No SAVE / RESTORE
-- No context mutation
-
-Violation → **session termination**
-
----
-
-### Devstral2 (Precision Tier)
-
-Primary use:
-
-- code_review
-- refactor
-- code_generation
-- debugging
-
-Hard Gates:
-
-- Diff-scoped input REQUIRED
-- Canary execution REQUIRED for refactor
-- Explicit file list REQUIRED
-- SAVE forbidden until verification passes
-
----
-
-### Flash & Free Models
-
-Allowed intents only:
-
-- classify
-- summarize
-
-All outputs are **non-authoritative**
-until validated by orchestrator.
-
----
-
-## Context Injection Contract (Mandatory)
-
-All model invocations MUST receive structured context blocks only.
-No raw conversation history is permitted.
-
-Before any model invocation, the orchestrator MUST inject
-the following governance context block.
-
-This block is authoritative, immutable, and non-negotiable.
+No silent substitution is allowed.
 
 ```yaml
-context_block:
-  type: governance
-  source: CONTRACT.md
-  authority: absolute
-  mutable: false
+model_resolution:
+  gpt-5.2-codex:
+    primary: gpt-5.2-codex
+    fallback:
+      - gpt-4o
+    capability_profile: codex_high
+
+  gpt-5.1-codex:
+    primary: gpt-5.1-codex
+    fallback:
+      - gpt-4o
+    capability_profile: codex_high
+
+  gemini-2.5-pro:
+    primary: gemini-2.5-pro
+    fallback:
+      - gemini-1.5-pro
+    capability_profile: gemini_mid
+
+  mistral-devstral2:
+    primary: mistral-devstral2
+    fallback: []
+    capability_profile: mistral_exec
 ```
 
-### Required Blocks
+### Resolution Rules
 
-- `intent`
-- `task_scope`
-- `constraints`
-- `ai.project.json` (filtered slice)
-- `plugin_contract` (if applicable)
-
-### Forbidden Inputs
-
-- Raw chat history
-- Cross-project memory
-- Unbounded file trees
-- Hidden agent outputs
-- Implicit defaults
-
-Violation → **halt**
+- If `primary` is unavailable → try `fallback` in order
+- If all fail → **HALT**
+- Resolved model MUST respect original tier restrictions
+- Resolution MUST be logged to telemetry
 
 ---
 
-## Memory & Persistence Policy
+## Capability Profiles (Authoritative)
 
-### SAVE Rules (Strict)
+Capability profiles define **hard runtime limits**
+used by telemetry and burnout enforcement.
 
-SAVE is permitted ONLY when ALL are true:
+```yaml
+capability_profiles:
+  codex_high:
+    max_calls_per_task: 6
+    max_retries: 1
+    max_tokens: 64000
 
-- intent = `architecture`
-- ADR generated
-- Output validated
-- Explicit approval gate passed
+  gemini_mid:
+    max_calls_per_task: 4
+    max_retries: 1
+    max_tokens: 32000
 
-Otherwise → **SAVE FORBIDDEN**
+  mistral_exec:
+    max_calls_per_task: 8
+    max_retries: 1
+    max_tokens: 32000
 
----
+  preview_readonly:
+    max_calls_per_task: 2
+    max_retries: 0
+    max_tokens: 16000
 
-### RESTORE Rules
-
-RESTORE is REQUIRED when:
-
-- intent = architecture
-- intent = refactor
-- intent = domain
-
-Failure to RESTORE → **halt**
-
----
-
-## Verification Contract (Mandatory)
-
-Before returning output, orchestrator MUST verify:
-
-1. Intent alignment
-2. Model authorization (tier + role)
-3. Context completeness
-4. Constraint compliance
-5. No hallucinated APIs
-6. No scope creep
-7. No forbidden operations
-
-### Failure Handling
-
-| Failure Type    | Action                       |
-| --------------- | ---------------------------- |
-| Hallucination   | Retry once, stricter context |
-| Scope creep     | Reject output                |
-| Wrong model     | Halt                         |
-| Missing context | Ask user                     |
-| Policy breach   | Terminate session            |
-
-No silent retries.
-
----
-
-## Promotion & Downgrade Rules
-
-- Promotion requires **explicit user intent**
-- Downgrade allowed after failure
-- No self-escalation
-- No background fallback
-
----
-
-## Governance Invariants (Absolute)
-
-- `selection.md` overrides ALL configs
-- No model decides routing
-- No model mutates constraints
-- No implicit memory writes
-- No cross-project context access
-- No preview or free-tier escalation
-- No same-task multi-model chaining
-- GPT-5 Codex code generation MUST follow selection hard gates
-
----
-
-## Final Statement
-
-This configuration exists to ensure that
-**once a model is selected**, it:
-
-- stays in scope
-- respects context
-- preserves memory integrity
-- avoids burnout
-- never exceeds authority
-
-Violations are **fatal by design**.
-
+  free_assistive:
+    max_calls_per_task: 3
+    max_retries: 0
+    max_tokens: 16000
 ```
 
-```
+If capability profile is exceeded → **HALT**
+
+---
+
+## Role Definitions (Closed Set)
+
+Every model invocation MUST declare exactly one role.
+
+| Role | Description |
+|----|-------------|
+| `router` | Intent resolution and routing only |
+| `assistant` | Non-authoritative analysis |
+| `reviewer` | Read-only evaluation |
+| `architect` | Architectural decision-making |
+| `executor` | Code or refactor execution |
+
+Role misuse → **HALT**
+
+---
+
+## Retry & Escalation Policy (Static)
+
+- Max retries per task: **1**
+- Retry MUST use the same resolved model
+- No automatic escalation
+- No automatic promotion to higher tiers
+- Escalation requires explicit user approval AND telemetry justification
+
+Violation → **HALT**
+
+---
+
+## SAVE / RESTORE Authority (Reminder)
+
+- SAVE is a system action, never a model action
+- SAVE permitted only for:
+  - architecture
+  - domain
+  - refactor
+- RESTORE required for:
+  - architecture
+  - domain
+  - refactor
+
+Misuse → **HALT**
+
+---
+
+## Forbidden Configuration Patterns
+
+The following are explicitly forbidden:
+
+- Wildcard model routing
+- Implicit fallback
+- Dynamic tier reassignment
+- Model self-selection
+- Runtime mutation of this file
+
+Detection → **HALT**
+
+---
+
+## Final Rule
+
+If configuration is missing, incomplete, or contradictory:
+
+→ **DO NOT EXECUTE**
+→ **HALT EXPLICITLY**
+
+Correct refusal is compliant behavior.
