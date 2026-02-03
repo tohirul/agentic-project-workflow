@@ -161,19 +161,20 @@ The prompt MUST be classified into **exactly ONE intent** using
 
 Valid intents only:
 
-| Intent            | Description                         |
-| ----------------- | ----------------------------------- |
-| `classify`        | Routing / detection / tagging       |
-| `summarize`       | Condense existing material          |
-| `code_generation` | Write new code                      |
-| `code_review`     | Review diffs or files               |
-| `debugging`       | Root cause analysis                 |
-| `refactor`        | Structural code changes             |
-| `architecture`    | System / domain design decisions    |
-| `domain`          | Business or domain modeling         |
-| `research`        | Comparative or multi-source inquiry |
-| `planning`        | Ordered execution strategy          |
-| `chat`            | Low-risk, non-project-bound only    |
+| Intent             | Description                         |
+| ------------------ | ----------------------------------- |
+| `generate_context` | Bootstrap: Create `ai.project.json` |
+| `classify`         | Routing / detection / tagging       |
+| `summarize`        | Condense existing material          |
+| `code_generation`  | Write new code                      |
+| `code_review`      | Review diffs or files               |
+| `debugging`        | Root cause analysis                 |
+| `refactor`         | Structural code changes             |
+| `architecture`     | System / domain design decisions    |
+| `domain`           | Business or domain modeling         |
+| `research`         | Comparative or multi-source inquiry |
+| `planning`         | Ordered execution strategy          |
+| `chat`             | Low-risk, non-project-bound only    |
 
 If intent is ambiguous or mixed → **HALT and ask user**
 
@@ -211,10 +212,11 @@ Model routing MUST:
 - Follow `selection.md` exactly
 - Respect authority tier restrictions
 
+---
+
 ## Phase 4 — Delegation Contract
 
-The orchestrator MUST delegate with an explicit contract:
-
+The orchestrator MUST delegate with an explicit contract.
 The execution model receives:
 
 - Fixed model identity
@@ -222,6 +224,17 @@ The execution model receives:
 - Locked intent
 - Minimal context slice
 - Explicit output contract
+
+---
+
+## Phase 5 — Execution
+
+The execution model operates under strict isolation:
+
+- Prompt hardening applied (`prompt-hardening.md`)
+- Sandbox rules enforced (`sandbox.md`)
+- Telemetry recorded per invocation
+- No lifecycle phase escape
 
 The execution model MAY NOT:
 
@@ -232,7 +245,7 @@ The execution model MAY NOT:
 
 ---
 
-## Phase 5 — Verification & Enforcement (Mandatory)
+## Phase 6 — Verification & Enforcement (Mandatory)
 
 No output may be returned, saved, or acted upon without passing
 `verification.md`.
@@ -257,7 +270,17 @@ retry → reroute → halt
 
 ---
 
-## Phase 6 — Burnout & Cost Governance
+## Phase 7 — Intervention (Conditional)
+
+If verification returns `INTERVENTION_REQUIRED`:
+
+- Models allow human correction of output
+- No context mutation is allowed during intervention
+- Verification MUST run again after intervention
+
+---
+
+## Phase 8 — Burnout & Cost Governance (Telemetry)
 
 The orchestrator enforces:
 
@@ -266,8 +289,24 @@ The orchestrator enforces:
 - No recursive escalation
 - Downgrade on repeated failure
 - Summarization before escalation
+- Telemetry finalization
 
 Cost efficiency is enforced **by policy**, not discretion.
+
+---
+
+## Phase 9 — Memory Synchronization (SAVE / RESTORE)
+
+Memory mutation is **exceptional**, not default.
+
+SAVE is permitted ONLY when:
+
+- Intent allows it
+- Output is verified
+- Authority tier permits it
+- Workflow explicitly authorizes it
+
+RESTORE is read-only until verification passes.
 
 ---
 
@@ -343,21 +382,6 @@ This workflow is **allowed only with explicit task boundaries** at each handoff.
 4. **Task D — Feature Lock (Tier-A)**
    - Gemini 2.5 Pro (gemini-2.5-pro) confirms feature scope/updates.
    - If adjustments are required, a **new Task A** is started.
-
----
-
-## Phase 7 — Memory Synchronization (SAVE / RESTORE)
-
-Memory mutation is **exceptional**, not default.
-
-SAVE is permitted ONLY when:
-
-- Intent allows it
-- Output is verified
-- Authority tier permits it
-- Workflow explicitly authorizes it
-
-RESTORE is read-only until verification passes.
 
 ---
 
