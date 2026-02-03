@@ -34,11 +34,19 @@ No dynamic overrides.
 
 ---
 
+### OpenAI
+
+- gpt-5.1-codex
+- gpt-5.2-codex
+
+---
+
 ### Mistral
 
 - mistral-devstral2
 - mistral-medium
 - mistral-small
+- codestral-latest (free-tier constrained)
 
 ---
 
@@ -46,6 +54,7 @@ No dynamic overrides.
 
 Free-tier models are **assistive only**.
 
+- glm-4.7-free
 - kimi-k2.5-free
 - minimax-m2.1-free
 - big-pickle
@@ -151,6 +160,7 @@ Primary use:
 
 - code_review
 - refactor
+- code_generation
 - debugging
 
 Hard Gates:
@@ -168,8 +178,6 @@ Allowed intents only:
 
 - classify
 - summarize
-- extract
-- draft (non-final)
 
 All outputs are **non-authoritative**
 until validated by orchestrator.
@@ -284,6 +292,8 @@ No silent retries.
 - No implicit memory writes
 - No cross-project context access
 - No preview or free-tier escalation
+- No same-task multi-model chaining
+- GPT-5 Codex code generation MUST follow selection hard gates
 
 ---
 

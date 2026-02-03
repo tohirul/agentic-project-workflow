@@ -70,7 +70,7 @@ Limits are **non-negotiable**.
 
 ---
 
-### Tier-C — Gemini 3 (Preview / Pro Preview)
+### Tier-C — Gemini 3 (Preview / Pro Preview) (gemini-3-flash-preview, gemini-3-pro-preview)
 
 - Max **2 calls per task**
 - Max **1 escalation attempt**
@@ -89,7 +89,7 @@ Exceeding limits → **hard halt (no retry)**
 
 ---
 
-### Tier-A / Tier-B — Gemini 2 / 2.5
+### Tier-A / Tier-B — Gemini 2 / 2.5 (gemini-2, gemini-2-flash, gemini-2.5-pro, gemini-2.5-flash)
 
 - Max **6 calls per task**
 - Max **1 retry**
@@ -105,13 +105,12 @@ Exceeding limits → **forced downgrade or halt**
 
 ---
 
-### Tier-B — Gemini Pro (Low-Risk)
+### Tier-B — Gemini Pro (Low-Risk) (gemini-1.5-pro)
 
 - Unlimited calls
 - Allowed intents ONLY:
   - chat
   - summarize
-  - extract
 - NEVER authoritative
 - NEVER escalates
 - NEVER mutates context
@@ -120,7 +119,7 @@ Violation → **immediate downgrade + output discard**
 
 ---
 
-### Tier-A — Devstral2
+### Tier-A — Devstral2 (mistral-devstral2)
 
 - Max **8 calls per task**
 - Preferred for:
@@ -136,7 +135,111 @@ Exceeding limits → **halt refactor phase**
 
 ---
 
+### Tier-A — GPT-5 Codex (gpt-5.1-codex, gpt-5.2-codex)
+
+Applies to:
+
+- gpt-5.1-codex
+- gpt-5.2-codex
+
+Limits:
+
+- Max **6 calls per task**
+- Max **1 retry**
+
+Preferred for:
+
+- code_review
+- code_generation
+- research analysis
+
+Rules:
+
+- No architectural decisions unless intent = architecture or domain
+- No refactor unless explicitly authorized for that task
+- Code generation MUST follow selection hard gates
+- No automatic model chaining
+- Cross-model handoff requires a new task boundary
+
+Notes:
+
+- GPT-5.1 Codex is review-focused; GPT-5.2 Codex is authorized for architecture.
+
+See `SKILL.md` for allowed and forbidden handoff examples.
+
+Exceeding limits → **halt task**
+
+---
+
+### Tier-B — Codestral (Free Tier Constraints) (codestral-latest)
+
+Applies to:
+
+- codestral-latest
+
+Limits:
+
+- Max **4 calls per task**
+- Max **1 retry**
+
+Preferred for:
+
+- planning
+- solution outlining
+
+Rules:
+
+- Read-only guidance only
+- No architectural decisions
+- No code generation or refactor execution
+- Must follow GPT-5.2 Codex (gpt-5.2-codex) guidance when in a planning handoff
+- Cross-model handoff requires a new task boundary
+- Use for evaluation / non-production tasks only
+- If Codestral fails, start a NEW task: Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex) may co-plan (handoff only)
+
+Exceeding limits → **halt task**
+
+---
+
+### Tier-B — Legacy / Compatibility (gpt-4o)
+
+Applies to:
+
+- gpt-4o
+
+Limits:
+
+- Max **4 calls per task**
+- Max **1 retry**
+
+Rules:
+
+- Tier-B authority at most
+- No architectural decisions
+- No memory authority
+- No routing authority
+
+Exceeding limits → **halt task**
+
+---
+
 ### Tier-D — Free / Community Models
+
+Applies to:
+
+- big-pickle
+- glm-4.7-free
+- kimi-k2.5-free
+- minimax-m2.1-free
+- qwen-2.x
+- deepseek-coder-community
+
+### Tier-B — Mistral Fallback (mistral-medium, mistral-small)
+
+Applies to:
+
+- mistral-medium
+- mistral-small
 
 - Max **3 calls per task**
 - Output is ALWAYS **non-authoritative**

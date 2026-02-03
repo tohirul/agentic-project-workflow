@@ -57,12 +57,15 @@ Intent MUST NOT change after step 4.
 Only the following intents are valid:
 
 - `architecture`
+- `domain`
 - `code_review`
 - `refactor`
 - `debugging`
 - `code_generation`
 - `planning`
 - `research`
+- `summarize`
+- `classify`
 - `chat` (fallback only)
 
 Any other label → **invalid**
@@ -108,7 +111,29 @@ Trigger if ANY condition below matches.
 
 ---
 
-### 2️⃣ code_review
+### 2️⃣ domain
+
+This intent governs **domain modeling and business rules**.
+
+Trigger if ANY condition below matches.
+
+#### Explicit Keywords
+
+- domain model
+- domain rules
+- business rules
+- ubiquitous language
+- entity modeling
+- schema evolution
+
+#### Hard Overrides
+
+- Explicit mention of “domain” in a modeling context → domain
+- Requests to change domain invariants → domain
+
+---
+
+### 3️⃣ code_review
 
 This intent is **read-only by definition**.
 
@@ -142,7 +167,7 @@ Hard rule:
 
 ---
 
-### 3️⃣ refactor
+### 4️⃣ refactor
 
 This intent governs **structural improvement without redesign**.
 
@@ -168,7 +193,7 @@ Trigger if ANY condition below matches.
 
 ---
 
-### 4️⃣ debugging
+### 5️⃣ debugging
 
 This intent assumes **existing behavior is incorrect**.
 
@@ -195,7 +220,7 @@ Hard rule:
 
 ---
 
-### 5️⃣ code_generation
+### 6️⃣ code_generation
 
 This intent governs **net-new code creation**.
 
@@ -222,7 +247,7 @@ Hard gates:
 
 ---
 
-### 6️⃣ planning
+### 7️⃣ planning
 
 This intent governs **process, not execution**.
 
@@ -248,7 +273,7 @@ Hard rule:
 
 ---
 
-### 7️⃣ research
+### 8️⃣ research
 
 This intent governs **exploration without decision**.
 
@@ -273,7 +298,57 @@ Hard gate:
 
 ---
 
-### 8️⃣ chat (FALLBACK ONLY)
+### 9️⃣ summarize
+
+This intent governs **condensing provided material**.
+
+Trigger if ANY condition below matches.
+
+#### Keywords
+
+- summarize
+- summary
+- tl;dr
+- recap
+- bullet points
+
+#### Signals
+
+- “summarize this”
+- “give me a summary”
+- “shorten this”
+
+Hard rule:
+- Summarize does NOT add new information
+- Summarize does NOT infer missing context
+
+---
+
+### 🔟 classify
+
+This intent governs **routing / tagging / labeling** tasks.
+
+Trigger if ANY condition below matches.
+
+#### Keywords
+
+- classify
+- categorize
+- tag
+- label
+
+#### Signals
+
+- “what category is this”
+- “which bucket does this belong to”
+- “label these items”
+
+Hard rule:
+- Classification does NOT analyze beyond the provided text
+
+---
+
+### 1️⃣1️⃣ chat (FALLBACK ONLY)
 
 Assigned ONLY if ALL are true:
 
@@ -319,12 +394,15 @@ On halt:
 | Prompt                                     | Intent          |
 | ------------------------------------------ | --------------- |
 | “Design a scalable event-driven platform”  | architecture    |
+| “Define the domain model for billing”      | domain          |
 | “Review this PR for auth vulnerabilities”  | code_review     |
 | “Refactor this service to reduce coupling” | refactor        |
 | “Why is this API returning 500?”           | debugging       |
 | “Generate a new REST controller”           | code_generation |
 | “How should we approach this migration?”   | planning        |
 | “Compare Kafka vs NATS”                    | research        |
+| “Summarize this document”                  | summarize       |
+| “Classify these tickets”                   | classify        |
 | “What is DDD?”                             | chat            |
 
 ---

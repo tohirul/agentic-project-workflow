@@ -41,7 +41,7 @@ Rules:
 
 ## Phase 1 — Project Detection
 
-**Command:** `oc_detect`  
+**Command:** `scripts/detect-project.zsh`  
 **Authority:** System  
 **Model:** Gemini 2 Flash (router role)
 
@@ -64,7 +64,7 @@ Failure → halt
 
 ## Phase 2 — Context Creation (Human-in-the-Loop)
 
-**Command:** `oc_context_generate`  
+**Command:** `scripts/generate-context.zsh`  
 **Authority:** Human + System  
 **Model:** None
 
@@ -85,7 +85,7 @@ This phase MUST complete before any reasoning model is used.
 
 ## Phase 3 — Context Validation
 
-**Command:** `oc_validate`  
+**Command:** `scripts/validate-context.zsh`  
 **Authority:** System  
 **Model:** None
 
@@ -173,7 +173,7 @@ Skipped unless explicitly requested.
 
 ---
 
-## Phase 7 — Implementation / Refactor
+## Phase 7 — Implementation / Refactor / Code Generation
 
 **Authority:** Executor Agent  
 **Model:** Devstral2  
