@@ -13,14 +13,14 @@ If any conflict exists between files,
 
 ## Selection Philosophy
 
-- Intent determines *eligibility*, not authority
+- Intent determines _eligibility_, not authority
 - Authority tier constrains selection absolutely
 - No heuristic routing
 - No dynamic optimization
 - No silent fallback
 
 Correctness > convenience  
-Determinism > creativity  
+Determinism > creativity
 
 ---
 
@@ -52,20 +52,20 @@ A model may NEVER act outside its tier.
 
 ## Intent → Eligible Tiers (Strict)
 
-| Intent | Allowed Tiers |
-|------|---------------|
+| Intent           | Allowed Tiers           |
+| ---------------- | ----------------------- |
 | generate_context | Tier-B (structure only) |
-| classify | Tier-B |
-| summarize | Tier-B, Tier-D |
-| research | Tier-B |
-| planning | Tier-B |
-| debugging | Tier-B |
-| code_review | Tier-A |
-| code_generation | Tier-A |
-| refactor | Tier-A |
-| architecture | Tier-A |
-| domain | Tier-A |
-| chat | Tier-B, Tier-D |
+| classify         | Tier-B                  |
+| summarize        | Tier-B, Tier-D          |
+| research         | Tier-B                  |
+| planning         | Tier-B                  |
+| debugging        | Tier-B                  |
+| code_review      | Tier-A                  |
+| code_generation  | Tier-A                  |
+| refactor         | Tier-A                  |
+| architecture     | Tier-A                  |
+| domain           | Tier-A                  |
+| chat             | Tier-B, Tier-D          |
 
 If no tier is allowed → **HALT**
 
@@ -79,7 +79,7 @@ Resolution uses `configuration.md` model resolution.
 ### `generate_context`
 
 - gemini-1.5-pro  
-(Role: assistant, structure-only)
+  (Role: assistant, structure-only)
 
 ---
 
@@ -91,40 +91,43 @@ Resolution uses `configuration.md` model resolution.
 
 ### `summarize`
 
-- gemini-2-flash  
-- mistral-small  
+- gemini-2-flash
+- mistral-small
+- deepseek-coder-community
 - glm-4.7-free
+- minimax-m2.1-free
 
 ---
 
 ### `research`
 
-- gemini-2  
+- gemini-2
 - gemini-1.5-pro
 
 ---
 
 ### `planning`
 
-- gemini-1.5-pro  
+- gemini-1.5-pro
 - gpt-5.1-codex
 
 ---
 
 ### `debugging`
 
-- gemini-2  
+- gemini-2
 - gpt-5.1-codex
 
 ---
 
 ### `code_review`
 
-- mistral-devstral2  
-- gpt-5.1-codex  
+- mistral-devstral2
+- gpt-5.1-codex
 - gpt-5.2-codex
 
 Scope:
+
 - Read-only
 - Diff-scoped
 - No architectural changes
@@ -133,11 +136,12 @@ Scope:
 
 ### `code_generation`
 
-- mistral-devstral2  
-- gpt-5.2-codex  
+- mistral-devstral2
+- gpt-5.2-codex
 - gpt-5.1-codex
 
 Hard Gates:
+
 - Explicit file list
 - No architectural decisions
 - SAVE forbidden until verification passes
@@ -149,12 +153,14 @@ Hard Gates:
 - mistral-devstral2 **ONLY**
 
 Hard Gates:
+
 - Explicit file list
 - Canary execution required
 - Diff-scoped changes
 - SAVE forbidden until verification passes
 
 Forbidden:
+
 - Gemini models
 - GPT Codex models
 - Free-tier models
@@ -163,10 +169,11 @@ Forbidden:
 
 ### `architecture`
 
-- gemini-2.5-pro  
+- gemini-2.5-pro
 - gpt-5.2-codex
 
 Hard Gates:
+
 - ADR-compatible output required
 - RESTORE required
 - SAVE allowed ONLY via ADR workflow
@@ -178,6 +185,7 @@ Hard Gates:
 - gemini-2.5-pro
 
 Hard Gates:
+
 - ADR-compatible output required
 - RESTORE required
 - SAVE allowed ONLY via ADR workflow
@@ -186,9 +194,11 @@ Hard Gates:
 
 ### `chat`
 
-- gemini-1.5-pro  
-- mistral-small  
+- gemini-1.5-pro
+- mistral-small
 - big-pickle
+- qwen-2.x
+- kimi-k2.5-free
 
 Low-risk, non-project-bound only.
 
@@ -197,15 +207,18 @@ Low-risk, non-project-bound only.
 ## Preview Model Restrictions (Absolute)
 
 Applies to:
+
 - gemini-3-pro-preview
 - gemini-3-flash-preview
 
 Preview models MAY:
+
 - Analyze
 - Compare
 - Propose options
 
 Preview models MAY NOT:
+
 - Write files
 - Modify code
 - Perform refactors
@@ -219,11 +232,13 @@ Violation → **HALT**
 ## Free-Tier Model Restrictions (Absolute)
 
 Free-tier models MAY:
+
 - Summarize
 - Classify
 - Explain concepts
 
 Free-tier models MAY NOT:
+
 - Generate production code
 - Review diffs
 - Make decisions

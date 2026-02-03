@@ -19,7 +19,7 @@ reinterpret, or expand context rules defined here.
 - Missing context is never inferred
 
 Correctness > convenience  
-Determinism > creativity  
+Determinism > creativity
 
 ---
 
@@ -29,6 +29,7 @@ Context is the **complete, frozen information set**
 provided to a model for a single task.
 
 Context MAY include:
+
 - RESTORE memory (if required)
 - `ai.project.json`
 - Explicit task scope
@@ -36,6 +37,7 @@ Context MAY include:
 - Active plugin contracts (if any)
 
 Context MUST NOT include:
+
 - Prior chat history (unless explicitly restored)
 - Cross-project information
 - Model-inferred assumptions
@@ -49,11 +51,9 @@ Context MUST be assembled in the following order.
 Higher-priority context overrides lower-priority context.
 
 1. RESTORE memory (approved, versioned only)
-2. Active architectural constraints
-3. Domain & schema definitions
-4. `ai.project.json`
-5. Task scope & permissions
-6. Explicit user prompt
+2. `ai.project.json` (includes constraints & domain definitions)
+3. Task scope & permissions
+4. Explicit user prompt
 
 Any deviation → **HALT**
 
@@ -77,6 +77,7 @@ Any attempt to mutate context mid-execution → **HALT**
 For **project-bound intents**, `ai.project.json` is **mandatory**.
 
 Project-bound intents include:
+
 - `architecture`
 - `domain`
 - `code_generation`
@@ -119,11 +120,11 @@ Before execution, the orchestrator MUST validate that:
 
 ### Failure Classification
 
-| Condition | Result |
-|--------|--------|
+| Condition                | Result     |
+| ------------------------ | ---------- |
 | Missing required context | `ASK_USER` |
-| Conflicting context | `HALT` |
-| Cross-project context | `HALT` |
+| Conflicting context      | `HALT`     |
+| Cross-project context    | `HALT`     |
 
 ---
 
@@ -132,6 +133,7 @@ Before execution, the orchestrator MUST validate that:
 Context MUST be isolated per project.
 
 Forbidden:
+
 - Referencing other repositories
 - Reusing schemas from other projects
 - Assuming shared infrastructure
@@ -151,6 +153,7 @@ Plugins MAY contribute context ONLY if:
 - Plugin context does not override core context
 
 Plugins MUST NOT:
+
 - Mutate core context
 - Inject hidden instructions
 - Load external memory

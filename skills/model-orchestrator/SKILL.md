@@ -74,41 +74,7 @@ Lifecycle violations are treated as **policy violations** and result in immediat
 
 ---
 
-## Execution Lifecycle (Strict, Ordered)
-
-Every execution MUST follow **all phases below**.
-No phase may be skipped, merged, or reordered.
-
----
-
-## Phase 1 — Intent Classification (Single-Label)
-
-The prompt MUST be classified into **exactly ONE intent** using
-`intent-classifier.md`.
-
-Valid intents only:
-
-| Intent            | Description                         |
-| ----------------- | ----------------------------------- |
-| `classify`        | Routing / detection / tagging       |
-| `summarize`       | Condense existing material          |
-| `code_generation` | Write new code                      |
-| `code_review`     | Review diffs or files               |
-| `debugging`       | Root cause analysis                 |
-| `refactor`        | Structural code changes             |
-| `architecture`    | System / domain design decisions    |
-| `domain`          | Business or domain modeling         |
-| `research`        | Comparative or multi-source inquiry |
-| `planning`        | Ordered execution strategy          |
-| `chat`            | Low-risk, non-project-bound only    |
-
-If intent is ambiguous or mixed → **HALT and ask user**
-
-Intent is **immutable** for the entire execution.
-
----
-
-## Phase 2 — Authority Tier Resolution
+## Authority Tier Definitions
 
 Each model belongs to **exactly one authority tier**.
 Intent does **not** override tier.
@@ -131,8 +97,6 @@ Notes:
 
 - GPT-5.1 Codex is review-focused; GPT-5.2 Codex is authorized for architecture.
 
----
-
 ### Tier-B — Secondary Authority
 
 - Gemini 2 (gemini-2)
@@ -150,8 +114,6 @@ Capabilities:
 - Verified summaries
 - Assisted decisions (no unilateral SAVE)
 
----
-
 ### Tier-C — Preview / Restricted
 
 - Gemini 3 Pro Preview (gemini-3-pro-preview)
@@ -164,8 +126,6 @@ Capabilities:
 - Advisory output only
 
 **No mutation. No SAVE. No refactor.**
-
----
 
 ### Tier-D — Free / Assistive (Non-Authoritative)
 
@@ -187,20 +147,42 @@ All Tier-D output is **non-final** and **must be verified**.
 
 ---
 
-## Phase 3 — Model Selection (Deterministic)
+## Execution Lifecycle (Strict, Ordered)
 
-Model routing MUST:
-
-- Follow `selection.md` exactly
-- Respect authority tier restrictions
-- Respect preview and free-tier limits
-- Never fallback implicitly
-
-If no valid model exists for intent + tier → **HALT**
+Every execution MUST follow **all phases below**.
+No phase may be skipped, merged, or reordered.
 
 ---
 
-## Phase 4 — Context Assembly (Mandatory)
+## Phase 1 — Intent Classification (Single-Label)
+
+The prompt MUST be classified into **exactly ONE intent** using
+`intent-classifier.md`.
+
+Valid intents only:
+
+| Intent             | Description                         |
+| ------------------ | ----------------------------------- |
+| `generate_context` | Bootstrap: Create `ai.project.json` |
+| `classify`         | Routing / detection / tagging       |
+| `summarize`        | Condense existing material          |
+| `code_generation`  | Write new code                      |
+| `code_review`      | Review diffs or files               |
+| `debugging`        | Root cause analysis                 |
+| `refactor`         | Structural code changes             |
+| `architecture`     | System / domain design decisions    |
+| `domain`           | Business or domain modeling         |
+| `research`         | Comparative or multi-source inquiry |
+| `planning`         | Ordered execution strategy          |
+| `chat`             | Low-risk, non-project-bound only    |
+
+If intent is ambiguous or mixed → **HALT and ask user**
+
+Intent is **immutable** for the entire execution.
+
+---
+
+## Phase 2 — Context Assembly (Mandatory)
 
 Before execution, the orchestrator MUST assemble a **frozen context snapshot**
 per `context-contract.md`.
@@ -223,10 +205,18 @@ Execution MUST halt if:
 
 ---
 
-## Phase 5 — Delegation Contract
+## Phase 3 — Model Selection (Deterministic)
 
-The orchestrator MUST delegate with an explicit contract:
+Model routing MUST:
 
+- Follow `selection.md` exactly
+- Respect authority tier restrictions
+
+---
+
+## Phase 4 — Delegation Contract
+
+The orchestrator MUST delegate with an explicit contract.
 The execution model receives:
 
 - Fixed model identity
@@ -234,6 +224,17 @@ The execution model receives:
 - Locked intent
 - Minimal context slice
 - Explicit output contract
+
+---
+
+## Phase 5 — Execution
+
+The execution model operates under strict isolation:
+
+- Prompt hardening applied (`prompt-hardening.md`)
+- Sandbox rules enforced (`sandbox.md`)
+- Telemetry recorded per invocation
+- No lifecycle phase escape
 
 The execution model MAY NOT:
 
@@ -269,7 +270,17 @@ retry → reroute → halt
 
 ---
 
-## Phase 7 — Burnout & Cost Governance
+## Phase 7 — Intervention (Conditional)
+
+If verification returns `INTERVENTION_REQUIRED`:
+
+- Models allow human correction of output
+- No context mutation is allowed during intervention
+- Verification MUST run again after intervention
+
+---
+
+## Phase 8 — Burnout & Cost Governance (Telemetry)
 
 The orchestrator enforces:
 
@@ -278,8 +289,24 @@ The orchestrator enforces:
 - No recursive escalation
 - Downgrade on repeated failure
 - Summarization before escalation
+- Telemetry finalization
 
 Cost efficiency is enforced **by policy**, not discretion.
+
+---
+
+## Phase 9 — Memory Synchronization (SAVE / RESTORE)
+
+Memory mutation is **exceptional**, not default.
+
+SAVE is permitted ONLY when:
+
+- Intent allows it
+- Output is verified
+- Authority tier permits it
+- Workflow explicitly authorizes it
+
+RESTORE is read-only until verification passes.
 
 ---
 
@@ -339,8 +366,9 @@ This workflow is **allowed only with explicit task boundaries** at each handoff.
    - Task ends after verification.
 
 1a. **If Codestral fails (Task A fails)**
-   - Start a NEW Task A with **Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex)** co-planning.
-   - This is a new task boundary and remains compliant with no same-task chaining.
+
+- Start a NEW Task A with **Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex)** co-planning.
+- This is a new task boundary and remains compliant with no same-task chaining.
 
 2. **Task B — Implementation (Tier-A)**
    - Devstral2 (mistral-devstral2) analyzes the approved plan and implements the solution.
@@ -354,21 +382,6 @@ This workflow is **allowed only with explicit task boundaries** at each handoff.
 4. **Task D — Feature Lock (Tier-A)**
    - Gemini 2.5 Pro (gemini-2.5-pro) confirms feature scope/updates.
    - If adjustments are required, a **new Task A** is started.
-
----
-
-## Phase 8 — Memory Synchronization (SAVE / RESTORE)
-
-Memory mutation is **exceptional**, not default.
-
-SAVE is permitted ONLY when:
-
-- Intent allows it
-- Output is verified
-- Authority tier permits it
-- Workflow explicitly authorizes it
-
-RESTORE is read-only until verification passes.
 
 ---
 
