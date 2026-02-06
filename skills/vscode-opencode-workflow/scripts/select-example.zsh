@@ -21,7 +21,7 @@ setopt pipefail
 ############################################
 
 SCRIPT_DIR="$(cd "$(dirname "${0:A}")" && pwd)"
-EXAMPLES_DIR="$SCRIPT_DIR/../examples"
+export EXAMPLES_DIR="$SCRIPT_DIR/../examples"
 DETECT_SCRIPT="$SCRIPT_DIR/detect-project.zsh"
 
 # --- Contract: Standardized Exit Codes ---
@@ -56,7 +56,7 @@ fi
 PROJECT_STACK="$(
   "$DETECT_SCRIPT" 2>/dev/null \
     | awk -F= '$1=="stack"{print $2}'
-)"
+)" || true
 
 # Fallback if detection fails
 PROJECT_STACK="${PROJECT_STACK:-unknown}"
