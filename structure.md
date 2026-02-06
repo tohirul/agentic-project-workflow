@@ -7,12 +7,16 @@
             ├── AGENT.md
             ├── CHECKS.md
             ├── configuration.md
+            ├── CONSISTENCY_REPORT.md
             ├── context-contract.md
+            ├── CONTRACT.md
             ├── intent-classifier.md
             ├── lifecycle.md
             ├── memory-sync.md
             ├── prompt-hardening.md
+            ├── runtime-driver.md
             ├── sandbox.md
+            ├── scoring.md
             ├── selection.md
             ├── SKILL.md
             ├── telemetry.md
@@ -50,12 +54,12 @@
                     ├── SKILL.md
             └── 📁scripts
                 ├── detect-project.zsh
+                ├── generate-adr.zsh
                 ├── generate-context.zsh
                 ├── generate-tasks.zsh
                 ├── select-example.zsh
                 ├── validate-context.zsh
             ├── CONTRACT.md
             ├── SKILL.md
-            ├── structure.md
     └── structure.md
 ```

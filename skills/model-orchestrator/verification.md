@@ -4,6 +4,7 @@ This file defines the **final, non-bypassable verification gate**
 for **all AI-generated outputs** under the Multi-Model AI Orchestrator.
 
 No output may be:
+
 - Returned to the user
 - Persisted via SAVE
 - Used by another agent or plugin
@@ -24,7 +25,7 @@ Verification is **deterministic**, **fail-closed**, and **policy-driven**.
 
 Correctness > completeness  
 Governance > convenience  
-Safety > speed  
+Safety > speed
 
 ---
 
@@ -32,12 +33,12 @@ Safety > speed
 
 Verification MAY end in exactly one outcome:
 
-| Outcome | Meaning |
-|-------|--------|
-| `PASS` | Output is valid and may proceed |
-| `HALT` | Non-recoverable violation |
-| `ASK_USER` | Missing or ambiguous information |
-| `INTERVENTION_REQUIRED` | Recoverable structural failure |
+| Outcome                 | Meaning                          |
+| ----------------------- | -------------------------------- |
+| `PASS`                  | Output is valid and may proceed  |
+| `HALT`                  | Non-recoverable violation        |
+| `ASK_USER`              | Missing or ambiguous information |
+| `INTERVENTION_REQUIRED` | Recoverable structural failure   |
 
 No other outcomes are permitted.
 
@@ -67,6 +68,7 @@ Confirm that the output:
 - Does NOT drift across lifecycle phases
 
 ### Immediate HALT if output includes:
+
 - Mixed intents (e.g. review + refactor)
 - Unrequested planning or architectural decisions
 - Execution guidance during research
@@ -85,6 +87,7 @@ Confirm that the output is valid for:
 - Declared intent (per `intent-classifier.md`)
 
 ### Immediate HALT if:
+
 - Preview model performs write, refactor, or SAVE actions
 - Tier-D or Flash model produces authoritative output
 - Any model escalates its own authority
@@ -113,10 +116,10 @@ The output MAY reference ONLY entities present in:
 
 ### Failure Classification:
 
-| Condition | Result |
-|--------|--------|
-| Missing required context | `ASK_USER` |
-| Invented or conflicting context | `HALT` |
+| Condition                       | Result     |
+| ------------------------------- | ---------- |
+| Missing required context        | `ASK_USER` |
+| Invented or conflicting context | `HALT`     |
 
 ---
 
@@ -148,16 +151,19 @@ Failure → `HALT`
 ### Additional Rules
 
 **Code Outputs**
+
 - Syntactically valid
 - Uses only real, existing APIs
 - No TODOs or stubs unless explicitly allowed
 
 **Code Review Outputs**
+
 - Diff-scoped only
 - Exact file paths and line numbers required
 - No refactor suggestions unless intent = refactor
 
 **Architecture / Domain Outputs**
+
 - ADR-compatible structure when required
 - Clear separation of:
   - Context
@@ -168,9 +174,9 @@ Failure → `HALT`
 
 ### Failure Classification:
 
-| Failure | Result |
-|------|--------|
-| Malformed format | `INTERVENTION_REQUIRED` |
+| Failure                   | Result                  |
+| ------------------------- | ----------------------- |
+| Malformed format          | `INTERVENTION_REQUIRED` |
 | Missing required sections | `INTERVENTION_REQUIRED` |
 
 ---
@@ -180,15 +186,18 @@ Failure → `HALT`
 Hallucination enforcement depends on **intent criticality**.
 
 ### Critical Intents
+
 `architecture`, `domain`, `refactor`, `code_generation`
 
 Immediate **HALT** if output contains:
+
 - Invented APIs, tools, or frameworks
 - Ungrounded assumptions
 - Speculative language (“maybe”, “likely”, “typically”) without citation
 - Assumed defaults or future tooling
 
 ### Non-Critical Intents
+
 `research`, `summarize`, `chat`, `planning`
 
 - Ungrounded generalizations → allowed but flagged
@@ -211,10 +220,10 @@ The output MUST strictly match the declared output contract:
 
 ### Failure Classification:
 
-| Failure | Result |
-|------|--------|
+| Failure           | Result                  |
+| ----------------- | ----------------------- |
 | Contract mismatch | `INTERVENTION_REQUIRED` |
-| Forbidden content | `HALT` |
+| Forbidden content | `HALT`                  |
 
 ---
 
@@ -267,3 +276,22 @@ If verification cannot be completed deterministically due to:
 → **DO NOT PROCEED**
 
 Correct silence is a valid and compliant outcome.
+
+All outputs that reach this stage MUST be evaluated using the
+Scoring & Fitness Evaluation Protocol defined in `scoring.md`.
+
+This stage determines whether the output is:
+
+- architecturally admissible
+- operationally useful
+- consistent with system memory
+- minimal in complexity
+
+### Enforcement Rules
+
+- Any output with a final score < 3.5 → HALT
+- Any axis score < 3.0 → HALT
+- No retries beyond global retry policy
+- No emission without passing scoring
+
+This stage is mandatory and cannot be skipped or downgraded.
