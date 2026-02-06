@@ -52,6 +52,9 @@
                     ├── AGENT.md
                     ├── COMMAND.md
                     ├── SKILL.md
+                └── 📁vercel
+                    ├── AGENT.md
+                    ├── SKILL.md
             └── 📁scripts
                 ├── detect-project.zsh
                 ├── generate-adr.zsh
