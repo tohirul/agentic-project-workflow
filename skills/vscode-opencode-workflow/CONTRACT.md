@@ -1,25 +1,28 @@
----
 ## Script Authority
 
 All scripts under `scripts/` are authoritative for:
-  - Filesystem inspection
-  - Context generation
-  - Context validation
-  - Task skeleton emission
-  - Example discovery
+
+- Filesystem inspection
+- Context generation
+- Context validation
+- Task skeleton emission
+- Example discovery
 
 Scripts MUST:
-  - Operate on explicit inputs only
-  - Produce deterministic output
-  - Exit non-zero on failure
-  - Never mutate files unless explicitly defined
+
+- Operate on explicit inputs only
+- Produce deterministic output
+- Exit non-zero on failure
+- Never mutate files unless explicitly defined
 
 Scripts MUST NOT:
-  - Select models
-  - Infer intent
-  - Read chat history
-  - Modify memory
-  - Write editor state
+
+- Select models
+- Infer intent
+- Read chat history
+- Modify memory
+- Write editor state
+
 ---
 
 ## Editor Binding Rules
@@ -54,11 +57,28 @@ Silence or partial execution is forbidden.
 
 ---
 
+## Standardized Exit Codes
+
+Scripts MUST adhere to the following exit code standards to support
+Orchestrator decision logic:
+
+| Code | Meaning                 | Description                                   |
+| :--- | :---------------------- | :-------------------------------------------- |
+| `0`  | **Success**             | Task completed successfully.                  |
+| `1`  | **Validation Failure**  | Input arguments or config validation failed.  |
+| `2`  | **Environment Failure** | Missing dependencies (e.g., VS Code, CLI).    |
+| `3`  | **Execution Failure**   | Script crashed or encountered an I/O error.   |
+| `4`  | **Scope Violation**     | Attempted to access forbidden paths/projects. |
+
+Any other exit code is treated as a generic Execution Failure (Code 3).
+
+---
+
 ## Compatibility Guarantees
 
 This workflow guarantees compatibility with:
 
-- Any POSIX-compliant shell
+- Any POSIX-compliant shell environment
 - Any OpenCode-supported model
 - Any OpenCode plugin
 
@@ -74,6 +94,6 @@ Compatibility is achieved by:
 
 If any component cannot operate **exactly** within this contract:
 
-→ Execution MUST halt  
-→ Responsibility MUST be surfaced  
+→ Execution MUST halt
+→ Responsibility MUST be surfaced
 → No compensating behavior is allowed

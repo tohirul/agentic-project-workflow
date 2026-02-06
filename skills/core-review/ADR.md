@@ -4,6 +4,9 @@ This file defines the **only valid mechanism** for creating, validating,
 storing, and enforcing architectural decisions under the
 Multi-Model AI Orchestrator.
 
+This document is subordinate to lifecycle.md and selection.md.
+In case of conflict, those files are authoritative.
+
 ADRs are **mandatory**, **versioned**, and **governance-bound**.
 
 No ADR → No architecture.
@@ -30,32 +33,36 @@ If architecture intent is detected and no ADR is produced → **output is INVALI
 
 ## ADR Authority & Model Rules
 
-- ADRs may be generated ONLY by:
-  - **Gemini 2.5 Pro** (Tier-A)
-  - **Gemini 3 Pro Preview** (Tier-C, read-only, OPT-IN)
+ADRs may be generated ONLY by Tier-A authorized models:
 
-- Preview models:
-  - MAY draft ADRs
-  - MAY NOT finalize or SAVE without Tier-A verification
+- Gemini 2.5 Pro
+- gpt-5.2-codex
 
-- Free / Tier-D models:
-  - MAY NOT generate ADRs
-  - MAY NOT influence decisions
+Preview or restricted models:
+
+- MAY draft ADRs in read-only mode
+- MAY NOT verify or SAVE ADRs
+
+Free / Tier-D models:
+
+- MAY NOT generate, draft, or influence ADRs
 
 ---
 
 ## ADR Lifecycle Integration
 
-ADR creation is bound to the orchestrated lifecycle:
+ADR creation is bound to the orchestrated lifecycle as defined
+in lifecycle.md (authoritative).
 
-| Phase    | Action                         |
-| -------- | ------------------------------ |
-| Phase 4  | RESTORE prior ADRs (mandatory) |
-| Phase 5  | Generate ADR (read-only)       |
-| Phase 9  | Verify ADR                     |
-| Phase 10 | SAVE ADR (explicit gate)       |
+| Phase   | Action                                         |
+| ------- | ---------------------------------------------- |
+| Phase 2 | RESTORE prior ADRs (mandatory)                 |
+| Phase 3 | Intent classification (architecture detection) |
+| Phase 4 | ADR drafting (read-only unless authorized)     |
+| Phase 6 | Verification of ADR                            |
+| Phase 7 | SAVE ADR (explicit approval gate)              |
 
-Any ADR created outside this flow is **non-authoritative**.
+Any ADR created outside this lifecycle is non-authoritative.
 
 ---
 
