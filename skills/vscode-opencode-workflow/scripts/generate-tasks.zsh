@@ -1,8 +1,9 @@
 #!/usr/bin/env zsh
-set -euo pipefail
+set -eu
+setopt pipefail
 
 ############################################
-# generate-vscode-tasks.zsh
+# generate-tasks.zsh
 #
 # Purpose:
 #   Generate canonical VS Code tasks for
@@ -20,10 +21,15 @@ set -euo pipefail
 VSCODE_DIR=".vscode"
 TASKS_FILE="$VSCODE_DIR/tasks.json"
 
+# --- Contract: Standardized Exit Codes ---
+EXIT_SUCCESS=0
+EXIT_VALIDATION=1
+EXIT_EXEC=3
+
 if [[ -f "$TASKS_FILE" ]]; then
   echo "ERROR: $TASKS_FILE already exists." >&2
   echo "Edit it manually if changes are needed." >&2
-  exit 1
+  exit "$EXIT_VALIDATION"
 fi
 
 mkdir -p "$VSCODE_DIR"

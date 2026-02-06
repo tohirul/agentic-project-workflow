@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
-set -euo pipefail
+set -eu
+setopt pipefail
 
 ############################################################
 # validate-context.zsh
@@ -38,7 +39,7 @@ fatal() {
 }
 
 guard_file() {
-  [[ -f "$1" ]] || fatal "$1 not found (Run 'generate-context' first)" "$EXIT_VALIDATION"
+  [[ -f "$1" ]] || fatal "$1 not found (Run 'generate-context.zsh' first)" "$EXIT_VALIDATION"
 }
 
 guard_project_root() {
@@ -241,8 +242,10 @@ check_adr() {
   adr_status="$(
     awk '
       /^## Status/ {
-        getline
-        while ($0 ~ /^[[:space:]]*$/) getline
+        if (getline <= 0) exit
+        while ($0 ~ /^[[:space:]]*$/) {
+          if (getline <= 0) exit
+        }
         print
         exit
       }

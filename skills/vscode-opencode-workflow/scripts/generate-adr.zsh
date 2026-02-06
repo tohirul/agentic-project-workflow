@@ -1,5 +1,18 @@
 #!/usr/bin/env zsh
-set -euo pipefail
+set -eu
+setopt pipefail
+
+# --- Contract: Standardized Exit Codes ---
+EXIT_SUCCESS=0
+EXIT_VALIDATION=1
+EXIT_ENV=2
+EXIT_EXEC=3
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 <field> <new_value> [old_value] [status]" >&2
+  echo "Example: $0 application-style microservices monolith Proposed" >&2
+  exit "$EXIT_VALIDATION"
+fi
 
 FIELD="$1"
 NEW="$2"
@@ -21,20 +34,27 @@ case "$FIELD" in
     ;;
   *)
     echo "ERROR: ADR not allowed for field: $FIELD" >&2
-    exit 1
+    exit "$EXIT_VALIDATION"
     ;;
 esac
 
 mkdir -p "$ADR_DIR"
-FILE="$ADR_DIR/ADR-${DATE}-${SLUG}.md"
 
-if [[ -f "$FILE" ]]; then
-  echo "ADR already exists: $FILE"
-  exit 0
-fi
+INDEX=0
+while true; do
+  if [[ $INDEX -eq 0 ]]; then
+    ADR_ID="ADR-${DATE}-${SLUG}"
+  else
+    ADR_ID="ADR-${DATE}-${SLUG}-${INDEX}"
+  fi
+
+  FILE="$ADR_DIR/${ADR_ID}.md"
+  [[ ! -f "$FILE" ]] && break
+  INDEX=$((INDEX + 1))
+done
 
 cat <<EOF > "$FILE"
-# ADR-${DATE}-${SLUG}
+# ${ADR_ID}
 
 ## Status
 $STATUS

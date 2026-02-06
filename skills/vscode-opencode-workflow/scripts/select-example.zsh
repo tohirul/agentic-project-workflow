@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
-set -euo pipefail
+set -eu
+setopt pipefail
 
 ############################################
 # select-example.zsh
@@ -23,23 +24,29 @@ SCRIPT_DIR="$(cd "$(dirname "${0:A}")" && pwd)"
 EXAMPLES_DIR="$SCRIPT_DIR/../examples"
 DETECT_SCRIPT="$SCRIPT_DIR/detect-project.zsh"
 
+# --- Contract: Standardized Exit Codes ---
+EXIT_SUCCESS=0
+EXIT_VALIDATION=1
+EXIT_ENV=2
+EXIT_EXEC=3
+
 ############################################
 # Preconditions
 ############################################
 
 if ! command -v fzf >/dev/null 2>&1; then
   echo "ERROR: fzf is not installed" >&2
-  exit 1
+  exit "$EXIT_ENV"
 fi
 
 if [[ ! -x "$DETECT_SCRIPT" ]]; then
   echo "ERROR: detect-project.zsh not found or not executable" >&2
-  exit 1
+  exit "$EXIT_ENV"
 fi
 
 if [[ ! -d "$EXAMPLES_DIR" ]]; then
   echo "ERROR: examples directory not found" >&2
-  exit 1
+  exit "$EXIT_ENV"
 fi
 
 ############################################
@@ -92,11 +99,11 @@ for entry in "${EXAMPLES[@]}"; do
   fi
 
   if [[ "$META_STACK" == "universal" || "$META_STACK" == "$PROJECT_STACK" ]]; then
-    # Highlight relevant examples
-    FZF_INPUT+=$(printf "\033[1;32m%-30s\033[0m %s\n" "$file" "$desc")
+    # Highlight relevant examples (Description only, keep filename raw)
+    FZF_INPUT+=$(printf "%-30s \033[1;32m%s\033[0m\n" "$file" "$desc")
   else
-    # Dim irrelevant examples
-    FZF_INPUT+=$(printf "\033[2m%-30s %s\033[0m\n" "$file" "$desc")
+    # Dim irrelevant examples (Description only, keep filename raw)
+    FZF_INPUT+=$(printf "%-30s \033[2m%s\033[0m\n" "$file" "$desc")
   fi
 done
 
@@ -110,12 +117,12 @@ SELECTED_LINE=$(echo "$FZF_INPUT" | fzf \
   --border \
   --ansi \
   --no-multi \
-  --preview "sed -n '1,120p' $EXAMPLES_DIR/{1}" \
-  --preview-window=right:60%)
+  --preview 'sed -n "1,120p" -- "$EXAMPLES_DIR/{1}"' \
+  --preview-window=right:60%) || true
 
 if [[ -z "$SELECTED_LINE" ]]; then
   echo "No example selected."
-  exit 0
+  exit "$EXIT_SUCCESS"
 fi
 
 SELECTED_FILE="$(awk '{print $1}' <<< "$SELECTED_LINE")"

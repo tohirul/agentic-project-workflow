@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
-set -euo pipefail
+set -eu
+setopt pipefail
 
 ############################################
 # detect-project.zsh
@@ -24,6 +25,13 @@ set -euo pipefail
 ############################################
 
 VERSION="1.2.0"
+
+# --- Contract: Standardized Exit Codes ---
+EXIT_SUCCESS=0
+EXIT_VALIDATION=1
+EXIT_ENV=2
+EXIT_EXEC=3
+EXIT_SCOPE=4
 
 ############################################
 # Help
@@ -76,7 +84,7 @@ VERBOSE=false
 case "${1:-}" in
   --help)
     print_help
-    exit 0
+    exit "$EXIT_SUCCESS"
     ;;
   --verbose)
     VERBOSE=true
@@ -183,7 +191,7 @@ done
 
 if [[ -z "$PROJECT_ROOT" ]]; then
   echo "ERROR: Unable to determine project root" >&2
-  exit 1
+  exit "$EXIT_VALIDATION"
 fi
 
 ROOT_ABS="$(cd "$PROJECT_ROOT" && pwd)"

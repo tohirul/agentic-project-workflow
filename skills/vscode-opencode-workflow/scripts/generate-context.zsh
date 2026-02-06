@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
-set -euo pipefail
+set -eu
+setopt pipefail
 
 ############################################################
 # generate-context.zsh
@@ -52,7 +53,7 @@ guard_command() {
 }
 
 guard_env() {
-  [[ -n "${!1:-}" ]] || fatal "$1 is not set (Environment Failure)" "$EXIT_ENV"
+  [[ -n "${${(P)1}:-}" ]] || fatal "$1 is not set (Environment Failure)" "$EXIT_ENV"
 }
 
 guard_absent_file() {
