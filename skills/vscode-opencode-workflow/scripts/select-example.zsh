@@ -40,8 +40,7 @@ if ! command -v fzf >/dev/null 2>&1; then
 fi
 
 if [[ ! -x "$DETECT_SCRIPT" ]]; then
-  echo "ERROR: detect-project.zsh not found or not executable" >&2
-  exit "$EXIT_ENV"
+  echo "WARNING: detect-project.zsh not found, skipping stack detection" >&2
 fi
 
 if [[ ! -d "$EXAMPLES_DIR" ]]; then
@@ -54,8 +53,10 @@ fi
 ############################################
 
 PROJECT_STACK="$(
-  "$DETECT_SCRIPT" 2>/dev/null \
-    | awk -F= '$1=="stack"{print $2}'
+  if [[ -x "$DETECT_SCRIPT" ]]; then
+    "$DETECT_SCRIPT" 2>/dev/null \
+      | awk -F= '$1=="stack"{print $2}'
+  fi
 )" || true
 
 # Fallback if detection fails
@@ -127,6 +128,11 @@ fi
 
 SELECTED_FILE="$(awk '{print $1}' <<< "$SELECTED_LINE")"
 TARGET="$EXAMPLES_DIR/$SELECTED_FILE"
+
+if [[ ! -f "$TARGET" ]]; then
+  echo "ERROR: Target file not found: $TARGET" >&2
+  exit "$EXIT_EXEC"
+fi
 
 ############################################
 # Open result
