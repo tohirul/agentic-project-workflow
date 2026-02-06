@@ -1,191 +1,182 @@
 # Context Contract (Authoritative)
 
-This file defines the **authoritative rules for context assembly, validation,
-and usage** for the Multi-Model AI Orchestrator.
+This document defines the **exclusive, non-negotiable rules** for context assembly, validation, immutability, and usage within the Multi-Model AI Orchestrator.
 
-Context is **frozen**, **deterministic**, and **hierarchical**.
-Models do not reason about context — they **obey it**.
+Context is **deterministic**, **hierarchical**, and **file-grounded**.  
+Models do not reason about context — they **consume a frozen snapshot**.
 
-No model, agent, plugin, or user instruction may bypass,
-reinterpret, or expand context rules defined here.
+If any conflict exists between this document and `CONTRACT.md`:
+→ **`CONTRACT.md` wins**
 
 ---
 
-## Context Philosophy
+## 1. Context Philosophy
 
 - Context is authoritative; output is subordinate
-- Context is assembled **before** execution
+- Context is assembled once, before execution
 - Context is immutable during execution
-- Missing context is never inferred
+- Context is never inferred
+- Context must be traceable to an explicit source
 
 Correctness > convenience  
-Determinism > creativity
+Determinism > creativity  
 
 ---
 
-## What Is Context
+## 2. What Context Is (Strict Definition)
 
-Context is the **complete, frozen information set**
-provided to a model for a single task.
-
-Context MAY include:
+Context consists **only** of the following explicit sources:
 
 - RESTORE memory (if required)
 - `ai.project.json`
-- Explicit task scope
+- Declared task scope & permissions
 - Explicit user prompt
-- Active plugin contracts (if any)
+- Explicit plugin contracts (if enabled)
+
+There are **no other context sources**.
+
+---
+
+## 3. What Context Is NOT
 
 Context MUST NOT include:
 
-- Prior chat history (unless explicitly restored)
-- Cross-project information
-- Model-inferred assumptions
-- Undeclared defaults
+- Prior chat history (unless restored)
+- Cross-project data
+- Undeclared assumptions
+- Inferred constraints
+- “Active architectural constraints”
+- “Domain rules” not present in `ai.project.json`
+- Model-generated policy interpretations
 
 ---
 
-## Context Assembly Order (Strict)
+## 4. Canonical Context Hierarchy
 
-Context MUST be assembled in the following order.
-Higher-priority context overrides lower-priority context.
+This hierarchy is **absolute** and identical to `CONTRACT.md`.
 
-1. RESTORE memory (approved, versioned only)
-2. `ai.project.json` (includes constraints & domain definitions)
-3. Task scope & permissions
-4. Explicit user prompt
+1. RESTORE memory  
+2. `ai.project.json`  
+3. Declared task scope & permissions  
+4. Explicit user prompt  
 
-Any deviation → **HALT**
-
----
-
-## Context Immutability Rule
-
-Once context is assembled and execution begins:
-
-- No additions
-- No removals
-- No reinterpretation
-- No dynamic loading
-
-Any attempt to mutate context mid-execution → **HALT**
+No additional layers are permitted.
 
 ---
 
-## `ai.project.json` Requirement
+## 5. `ai.project.json` Authority
 
-For **project-bound intents**, `ai.project.json` is **mandatory**.
+`ai.project.json` is the sole authoritative container for:
 
-Project-bound intents include:
+- Architectural constraints
+- Domain definitions
+- Schema rules
+- Technology locks
+- Invariants and prohibitions
 
-- `architecture`
-- `domain`
-- `code_generation`
-- `code_review`
-- `refactor`
-- `debugging`
-- `planning`
+If a rule is not present in this file, it is **not binding**.
+
+---
+
+## 6. Mandatory Requirement for Project-Bound Intents
+
+For intents:
+`architecture`, `domain`, `code_generation`, `code_review`,
+`refactor`, `debugging`, `planning`
 
 If `ai.project.json` is missing → **HALT**
 
 ---
 
-## Bootstrap Exception — `generate_context`
+## 7. Bootstrap Exception — `generate_context`
 
-The intent `generate_context` is a **single, explicit exception**
-to the `ai.project.json` requirement.
+Rules:
 
-### Rules
-
-- `ai.project.json` MAY be absent
-- Sandbox remains **ENABLED**
-- Write permission is granted **ONLY** for `ai.project.json`
-- Output MUST be exactly one file: `ai.project.json`
+- `ai.project.json` may be absent
+- Sandbox ENABLED
+- Write permission ONLY for `ai.project.json`
+- Output exactly one file
 - No SAVE / RESTORE
-- No additional context mutation
 
-Any violation → **HALT**
-
----
-
-## Context Validation Rules
-
-Before execution, the orchestrator MUST validate that:
-
-- Context is complete for the intent
-- Context contains no conflicts
-- Context does not contradict RESTORE memory
-- Context does not violate architectural constraints
-- Context is scoped to exactly ONE project
-
-### Failure Classification
-
-| Condition                | Result     |
-| ------------------------ | ---------- |
-| Missing required context | `ASK_USER` |
-| Conflicting context      | `HALT`     |
-| Cross-project context    | `HALT`     |
+Violation → **HALT**
 
 ---
 
-## Cross-Project Isolation (Absolute)
+## 8. Context Assembly Rules
 
-Context MUST be isolated per project.
+Assembly order:
+
+1. RESTORE memory
+2. `ai.project.json`
+3. Task scope & permissions
+4. User prompt
+
+Snapshot is frozen before model selection.
+
+---
+
+## 9. Context Immutability
+
+Once execution begins:
+- No additions
+- No removals
+- No reinterpretation
+- No dynamic loading
+
+Any mutation attempt → **HALT**
+
+---
+
+## 10. Context Validation
+
+Before execution, validate:
+
+- Required context present
+- No conflicts
+- Single project only
+- No inferred layers
+
+| Condition | Result |
+|---------|--------|
+| Missing context | ASK_USER |
+| Conflict / inferred context | HALT |
+
+---
+
+## 11. Cross-Project Isolation
 
 Forbidden:
-
-- Referencing other repositories
-- Reusing schemas from other projects
-- Assuming shared infrastructure
-- Using historical memory from unrelated work
+- Other repositories
+- Shared schemas
+- Unrelated memory
 
 Violation → **HALT**
 
 ---
 
-## Plugin Context Rules
+## 12. Plugin Context Rules
 
-Plugins MAY contribute context ONLY if:
+Plugins may contribute context ONLY if:
+- Explicitly enabled
+- Contract loaded
+- Scope declared
+- Subordinate to core context
 
-- Plugin is explicitly enabled
-- Plugin contract is loaded
-- Plugin scope is declared
-- Plugin context does not override core context
-
-Plugins MUST NOT:
-
-- Mutate core context
-- Inject hidden instructions
-- Load external memory
-
-Violation → **HALT**
+Plugins MUST NOT override or invent constraints.
 
 ---
 
-## Missing Context Handling
+## 13. Missing Context Handling
 
-If required context is missing and cannot be inferred:
+Only allowed response:
 
-The ONLY allowed response is:
-
-> **"Insufficient context."**
-
-No assumptions.
-No extrapolation.
-No partial execution.
+"Insufficient context."
 
 ---
 
-## Final Rule
+## 14. Final Rule
 
-If there is **any uncertainty** about:
-
-- Whether context is sufficient
-- Whether context applies
-- Whether context conflicts exist
-
-→ **ASK USER**
-→ **DO NOT GUESS**
-→ **DO NOT PROCEED**
-
-Correct non-execution is compliant behavior.
+If there is any uncertainty:
+→ ASK USER  
+→ DO NOT GUESS  
+→ DO NOT PROCEED

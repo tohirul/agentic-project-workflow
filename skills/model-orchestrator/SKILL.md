@@ -1,426 +1,302 @@
 ---
 name: orchestrating-multi-model-ai
-description: Deterministic orchestration of multiple AI models based on intent, authority tier, context guarantees, lifecycle phase, and cost governance. Enforces routing, verification, memory safety, and burnout prevention across long-running workflows.
+description: Deterministic orchestration of multiple AI models based on intent, context, lifecycle phase, authority tier, and cost governance. Enforces routing, verification, memory safety, and burnout prevention across long-running workflows.
 ---
 
-# Multi-Model AI Orchestrator (Authoritative)
+# Multi-Model AI Orchestrator — Authoritative Skill
 
-This skill defines the **control plane** for environments where **multiple AI models coexist**.
+## 1. Purpose and Scope
 
-The orchestrator does **not** reason.
-The orchestrator **governs reasoning**.
+This skill defines the control plane for environments where multiple AI models coexist.
 
-Its sole responsibility is to decide:
+The orchestrator does not reason.  
+The orchestrator governs reasoning.
 
-- **Which model may act**
-- **In what role**
-- **With which context**
-- **Under which constraints**
-- **At which lifecycle phase**
+Its responsibility is to deterministically enforce:
 
-No model, agent, or plugin may bypass this orchestration layer.
+- Which model may act
+- In what role
+- With which context
+- Under which constraints
+- At which lifecycle phase
 
----
-
-## Governing Principles (Absolute)
-
-The following principles are non-negotiable:
-
-- **Context is authoritative, not the model**
-- **Routing is deterministic, never heuristic**
-- **Authority is tier-based, not intent-based**
-- **Free models are assistive, never final**
-- **Preview models are advisory, never mutative**
-- **No model may escalate itself**
-- **No output is accepted without verification**
-
-Violation of any principle → **hard failure**
+No model, agent, plugin, or runtime component may bypass this skill.
 
 ---
 
-## When This Skill Applies
+## 2. Absolute Governing Principles
 
-This skill MUST be activated when **any** of the following are true:
+- Context is authoritative, not the model
+- Lifecycle order is absolute
+- Routing is deterministic, never heuristic
+- Authority is model-based, not intent-based
+- Free models are assistive, never final
+- Preview models are advisory, never mutative
+- No model may escalate itself
+- No output is accepted without verification
 
+Violation of any principle → HARD HALT
+
+---
+
+## 3. Applicability Rules
+
+### MUST be activated when:
 - More than one AI model is available
-- Cost, latency, or burnout must be controlled
-- Context must persist across agents or sessions
+- Cost, latency, or burnout must be governed
+- Context must persist across steps or sessions
 - SAVE / RESTORE memory is involved
 - Architectural or domain correctness matters
-- The task spans multiple steps or lifecycle phases
+- The task spans multiple lifecycle phases
 
-### This skill MUST NOT be used for
-
+### MUST NOT be used for:
 - Single-turn casual chat
-- Trivial, isolated code snippets
-- Non-project questions
+- Trivial, isolated snippets
+- Non-project-bound questions
 - Freeform brainstorming without validation
 
 ---
 
-## Lifecycle Binding
+## 4. Lifecycle Supremacy
 
-All execution under this skill MUST follow the lifecycle defined in:
+The execution lifecycle is defined exclusively in `lifecycle.md`.
 
-→ `lifecycle.md`
+This file defines policy and enforcement, not phase order.
 
-No agent, model, or plugin may:
-
-- Skip phases
-- Reorder phases
-- Execute outside the current phase
-
-Lifecycle violations are treated as **policy violations** and result in immediate halt.
+If any conflict exists:
+→ lifecycle.md wins
 
 ---
 
-## Authority Tier Definitions
+## 5. Canonical Lifecycle Alignment
 
-Each model belongs to **exactly one authority tier**.
-Intent does **not** override tier.
+All tasks follow the lifecycle defined in lifecycle.md:
 
-### Tier-A — Primary Authority
+0. State Validation  
+1. Intent Classification  
+2. Context Assembly  
+2a. Context Bootstrap (conditional)  
+3. Model Selection  
+4. Delegation  
+5. Execution  
+6. Verification  
+7. Intervention (conditional)  
+8. Telemetry Finalization  
+9. Memory Synchronization (SAVE)  
+10. Task Termination  
 
-- Gemini 2.5 Pro (gemini-2.5-pro)
-- Devstral2 (mistral-devstral2)
-- GPT-5.1 Codex (gpt-5.1-codex)
-- GPT-5.2 Codex (gpt-5.2-codex)
-
-Capabilities:
-
-- Architectural decisions
-- Refactors (with gates)
-- Code generation (with gates)
-- Memory writes (SAVE)
-
-Notes:
-
-- GPT-5.1 Codex is review-focused; GPT-5.2 Codex is authorized for architecture.
-
-### Tier-B — Secondary Authority
-
-- Gemini 2 (gemini-2)
-- Gemini 1.5 Pro (gemini-1.5-pro)
-- Gemini 2 Flash (gemini-2-flash)
-- Gemini 2.5 Flash (gemini-2.5-flash)
-- Mistral Medium (mistral-medium)
-- Mistral Small (mistral-small)
-- GPT-4o (gpt-4o) [legacy / compatibility]
-
-Capabilities:
-
-- Debugging
-- Planning
-- Verified summaries
-- Assisted decisions (no unilateral SAVE)
-
-### Tier-C — Preview / Restricted
-
-- Gemini 3 Pro Preview (gemini-3-pro-preview)
-- Gemini 3 Flash Preview (gemini-3-flash-preview)
-
-Capabilities:
-
-- Read-only reasoning
-- Option comparison
-- Advisory output only
-
-**No mutation. No SAVE. No refactor.**
-
-### Tier-D — Free / Assistive (Non-Authoritative)
-
-- KIMI K2.5 Free (kimi-k2.5-free)
-- Minimax M2.1 Free (minimax-m2.1-free)
-- Big Pickle (big-pickle)
-- Qwen-2.x (qwen-2.x)
-- DeepSeek-Coder (deepseek-coder-community)
-- GLM-4.7 Free (glm-4.7-free)
-
-Capabilities:
-
-- Pre-work
-- Drafting
-- Extraction
-- Idea surfacing
-
-All Tier-D output is **non-final** and **must be verified**.
+No deviation is permitted.
 
 ---
 
-## Execution Lifecycle (Strict, Ordered)
+## 6. Intent Classification (Phase 1)
 
-Every execution MUST follow **all phases below**.
-No phase may be skipped, merged, or reordered.
+Exactly ONE intent is resolved using intent-classifier.md.
 
----
+Intent is immutable after resolution.
 
-## Phase 1 — Intent Classification (Single-Label)
-
-The prompt MUST be classified into **exactly ONE intent** using
-`intent-classifier.md`.
-
-Valid intents only:
-
-| Intent             | Description                         |
-| ------------------ | ----------------------------------- |
-| `generate_context` | Bootstrap: Create `ai.project.json` |
-| `classify`         | Routing / detection / tagging       |
-| `summarize`        | Condense existing material          |
-| `code_generation`  | Write new code                      |
-| `code_review`      | Review diffs or files               |
-| `debugging`        | Root cause analysis                 |
-| `refactor`         | Structural code changes             |
-| `architecture`     | System / domain design decisions    |
-| `domain`           | Business or domain modeling         |
-| `research`         | Comparative or multi-source inquiry |
-| `planning`         | Ordered execution strategy          |
-| `chat`             | Low-risk, non-project-bound only    |
-
-If intent is ambiguous or mixed → **HALT and ask user**
-
-Intent is **immutable** for the entire execution.
+Ambiguous intent → ASK_USER  
+Invalid intent → HALT
 
 ---
 
-## Phase 2 — Context Assembly (Mandatory)
+## 7. Context Assembly (Phase 2)
 
-Before execution, the orchestrator MUST assemble a **frozen context snapshot**
-per `context-contract.md`.
+Context assembly is mandatory and occurs before any model or authority decision.
 
-Required inputs (priority order):
-
-1. RESTORE memory (if applicable)
-2. `ai.project.json`
-3. Task scope (intent, boundaries, permissions)
+Inputs:
+1. RESTORE memory (read-only)
+2. ai.project.json
+3. Task scope
 4. User prompt
 
-### Hard Stop Conditions
+Context is frozen after assembly.
 
-Execution MUST halt if:
-
-- Context is incomplete
-- Context conflicts exist
-- Cross-project data is detected
-- `ai.project.json` is missing for project-bound work
+Failures:
+- Missing context → ASK_USER
+- Conflicts or leakage → HALT
 
 ---
 
-## Phase 3 — Model Selection (Deterministic)
+## 8. Context Bootstrap (Phase 2a)
 
-Model routing MUST:
+Entered only when intent = generate_context.
 
-- Follow `selection.md` exactly
-- Respect authority tier restrictions
+Rules:
+- Sandbox enabled
+- Write only ai.project.json
+- No SAVE / RESTORE
+- No other writes
+
+Violation → HALT
 
 ---
 
-## Phase 4 — Delegation Contract
+## 9. Model Selection (Phase 3)
 
-The orchestrator MUST delegate with an explicit contract.
-The execution model receives:
+Model selection occurs after context assembly.
 
-- Fixed model identity
-- Fixed role (router / assistant / reviewer / architect / executor)
+Rules:
+- Follow selection.md
+- Deterministic only
+- Single resolved model
+- No silent fallback
+
+Failure → HALT
+
+---
+
+## 10. Authority Enforcement (After Phase 3)
+
+Authority is a property of the selected model.
+
+No authority checks may occur before model selection.
+
+Early enforcement → lifecycle violation → HALT
+
+---
+
+## 11. Authority Tiers
+
+### Tier-A — Primary
+gemini-2.5-pro  
+mistral-devstral2  
+gpt-5.1-codex  
+gpt-5.2-codex  
+
+Capabilities: architecture, refactor, code generation, SAVE (when allowed)
+
+### Tier-B — Secondary
+gemini-2  
+gemini-1.5-pro  
+gemini-2-flash  
+gemini-2.5-flash  
+mistral-medium  
+mistral-small  
+gpt-4o  
+
+Capabilities: debugging, planning, verified summaries
+
+### Tier-C — Preview
+gemini-3-pro-preview  
+gemini-3-flash-preview  
+
+Read-only advisory output only.
+
+### Tier-D — Free / Assistive
+kimi-k2.5-free  
+minimax-m2.1-free  
+big-pickle  
+qwen-2.x  
+deepseek-coder-community  
+glm-4.7-free  
+
+Non-final. Must be verified.
+
+---
+
+## 12. Delegation (Phase 4)
+
+Delegation contract includes:
+- Fixed model
+- Fixed role
 - Locked intent
-- Minimal context slice
-- Explicit output contract
+- Frozen context
+- Output contract
+
+No scope expansion or memory mutation unless allowed.
+
+Violation → HALT
 
 ---
 
-## Phase 5 — Execution
+## 13. Execution (Phase 5)
 
-The execution model operates under strict isolation:
+- Prompt hardening enforced
+- Sandbox enforced
+- Telemetry recorded
+- No phase escape
 
-- Prompt hardening applied (`prompt-hardening.md`)
-- Sandbox rules enforced (`sandbox.md`)
-- Telemetry recorded per invocation
-- No lifecycle phase escape
-
-The execution model MAY NOT:
-
-- Change routing
-- Expand scope
-- Load additional context
-- Mutate memory unless explicitly authorized
+Violation → HALT
 
 ---
 
-## Phase 6 — Verification & Enforcement (Mandatory)
+## 14. Verification (Phase 6)
 
-No output may be returned, saved, or acted upon without passing
-`verification.md`.
+No output proceeds without verification.
 
-Mandatory checks include:
-
+Checks:
 - Intent alignment
-- Model authorization
-- Context compliance
-- Scope enforcement
+- Authority compliance
+- Context integrity
 - Hallucination detection
 - Mutation safety
 
-### Tier-Specific Enforcement
-
-- Tier-D output → MUST be verified by Tier-A or Tier-B
-- Preview output → Advisory only, read-only
-- Refactor output → Canary execution REQUIRED
-
-Failure handling follows policy:
-retry → reroute → halt
+Failure → retry → reroute → halt
 
 ---
 
-## Phase 7 — Intervention (Conditional)
+## 15. Intervention (Phase 7)
 
-If verification returns `INTERVENTION_REQUIRED`:
+Only when verification = INTERVENTION_REQUIRED.
 
-- Models allow human correction of output
-- No context mutation is allowed during intervention
-- Verification MUST run again after intervention
+- Models inactive
+- Output edits only
+- Re-verification required
 
----
-
-## Phase 8 — Burnout & Cost Governance (Telemetry)
-
-The orchestrator enforces:
-
-- Rate limits per tier
-- No chained reasoning models
-- No recursive escalation
-- Downgrade on repeated failure
-- Summarization before escalation
-- Telemetry finalization
-
-Cost efficiency is enforced **by policy**, not discretion.
+Failure → HALT
 
 ---
 
-## Phase 9 — Memory Synchronization (SAVE / RESTORE)
+## 16. Telemetry (Phase 8)
 
-Memory mutation is **exceptional**, not default.
+- Rate limits enforced
+- Burnout prevention
+- Escalation control
+- Telemetry finalized
 
-SAVE is permitted ONLY when:
-
-- Intent allows it
-- Output is verified
-- Authority tier permits it
-- Workflow explicitly authorizes it
-
-RESTORE is read-only until verification passes.
+Failure → HALT
 
 ---
 
-## Cross-Model Collaboration (Strict)
+## 17. Memory Synchronization (Phase 9)
 
-“Partnering” between GPT-5 Codex (gpt-5.1-codex, gpt-5.2-codex) and Gemini models (gemini-2, gemini-2.5-pro) is permitted **only** as:
+SAVE only when:
+- Intent allows
+- Verification passed
+- Authority permits
+- Workflow authorizes
 
-- An explicit user-requested handoff to a **new task**
-- After verification and lifecycle reset
+Memory is append-only.
 
-Cross-model chaining **within the same task** remains forbidden.
-
-### Example (Allowed Handoff)
-
-1. Task A (research): GPT-5.2 Codex (gpt-5.2-codex) produces verified research summary.
-2. Task A ends after verification.
-3. Task B (architecture): user explicitly requests Gemini 2.5 Pro (gemini-2.5-pro) using Task A’s verified summary.
-
-This is a **new task boundary**, not same-task chaining.
-
-### Example (Not Allowed)
-
-1. Task A (research): GPT-5.2 Codex (gpt-5.2-codex) produces a summary.
-2. Without ending Task A or resetting lifecycle, the system calls Gemini 2 (gemini-2) for follow-up.
-
-This is **same-task chaining** and is forbidden.
+Misuse → HALT
 
 ---
 
-## Image Scan / Content Extraction (Strict)
+## 18. Task Termination (Phase 10)
 
-All image-based scanning and content extraction MUST use:
+- Release sandbox
+- Close telemetry
+- End task
 
-- Gemini 3 Flash Preview (gemini-3-flash-preview)
-- Gemini 3 Pro Preview (gemini-3-pro-preview)
-
-Rules:
-
-- Read-only output only
-- No file writes, code generation, or refactors
-- Output must be used for summarize/classify only
-
-Fallback:
-
-- If Gemini 3 Preview is unavailable → use GPT-5.1 Codex (gpt-5.1-codex) in read-only mode
+No further actions permitted.
 
 ---
 
-## Multi-Model Workflow (Task-Bound, Allowed)
+## 19. Failure Handling Matrix
 
-This workflow is **allowed only with explicit task boundaries** at each handoff.
-
-1. **Task A — Planning (Tier-A + Tier-B)**
-   - GPT-5.2 Codex (gpt-5.2-codex) produces system + solution design guidance.
-   - Codestral (codestral-latest, free-tier constrained) prepares a structured plan using GPT-5.2 guidance.
-   - Codestral use is limited to evaluation / non-production planning.
-   - Task ends after verification.
-
-1a. **If Codestral fails (Task A fails)**
-
-- Start a NEW Task A with **Gemini 2.5 Pro (gemini-2.5-pro) + GPT-5.2 Codex (gpt-5.2-codex)** co-planning.
-- This is a new task boundary and remains compliant with no same-task chaining.
-
-2. **Task B — Implementation (Tier-A)**
-   - Devstral2 (mistral-devstral2) analyzes the approved plan and implements the solution.
-   - Task ends after review.
-
-3. **Task C — Review (Tier-A)**
-   - GPT-5.2 Codex (gpt-5.2-codex) reviews the solution.
-   - Findings are sent to Gemini 2.5 Pro (gemini-2.5-pro) for feature lock confirmation.
-   - Task ends after verification.
-
-4. **Task D — Feature Lock (Tier-A)**
-   - Gemini 2.5 Pro (gemini-2.5-pro) confirms feature scope/updates.
-   - If adjustments are required, a **new Task A** is started.
+Hallucination → Retry once  
+Intent drift → Reject  
+Authority violation → Halt  
+Missing context → Ask user  
+Policy breach → Terminate  
 
 ---
 
-## Failure Handling Matrix
+## 20. Supremacy Clause
 
-| Failure Class       | Action                       |
-| ------------------- | ---------------------------- |
-| Hallucination       | Retry once, stricter context |
-| Intent drift        | Reject output                |
-| Authority violation | Halt immediately             |
-| Missing context     | Ask user                     |
-| Policy breach       | Terminate session            |
+This skill is the highest-level behavioral authority.
 
-No silent correction is allowed.
+If any file, script, or plugin conflicts with this document:
 
----
-
-## Absolute Output Rules
-
-All returned output MUST:
-
-- Be intent-aligned
-- Be context-compliant
-- Avoid speculative language
-- Avoid reasoning traces
-- Avoid unstated assumptions
-- Avoid cross-project leakage
-
-Only **validated, scoped, policy-compliant output** is permitted.
-
----
-
-## Supremacy Clause
-
-This skill is the **highest-level behavioral authority**.
-
-If any file (`selection.md`, `configuration.md`, plugins, scripts)
-conflicts with this skill:
-
-→ **This skill wins**
-
-No exceptions.
+→ THIS SKILL WINS

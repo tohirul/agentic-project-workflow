@@ -55,7 +55,7 @@ A model may NEVER act outside its tier.
 | Intent           | Allowed Tiers           |
 | ---------------- | ----------------------- |
 | generate_context | Tier-B (structure only) |
-| classify         | Tier-B                  |
+| classify         | Tier-B, Tier-C          |
 | summarize        | Tier-B, Tier-D          |
 | research         | Tier-B                  |
 | planning         | Tier-B                  |
@@ -76,26 +76,40 @@ If no tier is allowed → **HALT**
 The first available model in each list MUST be selected.
 Resolution uses `configuration.md` model resolution.
 
+---
+
 ### `generate_context`
 
-- gemini-1.5-pro  
-  (Role: assistant, structure-only)
+- gemini-1.5-pro
+- gemini-2-flash
+- gemini-2
+
+(Role: assistant, structure-only)
 
 ---
 
 ### `classify`
 
 - gemini-2-flash
+- gpt-4o
+- gemini-3-pro-preview
+
+Notes:
+
+- Read-only
+- No routing side-effects
+- No SAVE / RESTORE
 
 ---
 
 ### `summarize`
 
-- gemini-2-flash
-- mistral-small
 - deepseek-coder-community
 - glm-4.7-free
 - minimax-m2.1-free
+- mistral-small
+- gemini-2-flash
+- gpt-4o
 
 ---
 
@@ -109,14 +123,15 @@ Resolution uses `configuration.md` model resolution.
 ### `planning`
 
 - gemini-1.5-pro
-- gpt-5.1-codex
+- gemini-2
+- gemini-2-flash
 
 ---
 
 ### `debugging`
 
 - gemini-2
-- gpt-5.1-codex
+- gpt-4o
 
 ---
 
@@ -194,11 +209,13 @@ Hard Gates:
 
 ### `chat`
 
-- gemini-1.5-pro
-- mistral-small
 - big-pickle
 - qwen-2.x
 - kimi-k2.5-free
+- mistral-small
+- gemini-1.5-pro
+- gpt-4o
+- gemini-2
 
 Low-risk, non-project-bound only.
 
